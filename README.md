@@ -13,10 +13,7 @@ messy)
 ├─ application.py
 └─ allocation.py
 ```
-FIREBASE_PROJECT_ID=...
-FIREBASE_SERVICE_ACCOUNT_PATH=./secrets/serviceAccountKey.json
-ENV=development
-secrets/serviceAccountKey.json
+
 1. core/firebase.py (Firestore connection)
 2. api/deps.py (verify Firebase ID token + get user role)
 3. schemas/ (ApplicationCreate, ApplicationOut, AllocationCreate)
