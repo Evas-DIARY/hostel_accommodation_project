@@ -4,6 +4,7 @@ And you keep the real key file in:
 (never commit it)
 Suggested build order (so your code doesn’t become
 messy)
+```
 ├─ deps.py
 ├─ routes/
 │ ├─ applications.py
@@ -11,6 +12,7 @@ messy)
 └─ schemas/
 ├─ application.py
 └─ allocation.py
+```
 FIREBASE_PROJECT_ID=...
 FIREBASE_SERVICE_ACCOUNT_PATH=./secrets/serviceAccountKey.json
 ENV=development
