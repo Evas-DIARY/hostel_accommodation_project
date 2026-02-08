@@ -1,0 +1,24 @@
+{
+  "users": [
+    {
+      "uid": "test-student-001",
+      "email": "student@au.edu",
+      "name": "Test Student",
+      "full_name": "Test Student",
+      "registration_number": "123456",
+      "role": "student",
+      "password": "password123",
+      "created_at": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "uid": "test-warden-001",
+      "email": "warden@au.edu",
+      "name": "Test Warden",
+      "full_name": "Test Warden",
+      "registration_number": "654321",
+      "role": "warden",
+      "password": "password123",
+      "created_at": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}

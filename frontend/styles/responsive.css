@@ -1,0 +1,97 @@
+/* ===== Responsive Design ===== */
+
+/* Large tablets and small laptops */
+@media (max-width: 1200px) {
+    .nav-container,
+    .main-content,
+    .footer-content {
+        padding-left: var(--spacing-md);
+        padding-right: var(--spacing-md);
+    }
+    
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Tablets */
+@media (max-width: 992px) {
+    .nav-menu {
+        position: fixed;
+        top: 70px;
+        right: -100%;
+        width: 80%;
+        height: calc(100vh - 70px);
+        background-color: var(--primary-red);
+        flex-direction: column;
+        padding: var(--spacing-lg);
+        transition: right 0.3s ease;
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .nav-menu.active {
+        right: 0;
+    }
+    
+    .mobile-menu-btn {
+        display: block;
+    }
+    
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .user-profile {
+        margin-top: var(--spacing-lg);
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Mobile phones */
+@media (max-width: 768px) {
+    :root {
+        --spacing-lg: 1.5rem;
+        --spacing-md: 1rem;
+    }
+    
+    .main-content {
+        padding: var(--spacing-md);
+    }
+    
+    .card {
+        padding: var(--spacing-md);
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .footer-section {
+        text-align: center;
+    }
+    
+    .logo span {
+        font-size: 1.2rem;
+    }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+    .nav-container {
+        padding: 0.5rem;
+    }
+    
+    .logo i {
+        font-size: 1.5rem;
+    }
+    
+    .main-content {
+        padding: 1rem;
+    }
+    
+    .footer {
+        padding: var(--spacing-lg) var(--spacing-sm) var(--spacing-md);
+    }
+}
