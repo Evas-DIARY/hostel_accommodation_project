@@ -160,38 +160,163 @@ class HostelApp {
                 <p>Manage your hostel accommodation</p>
             </div>
 
+            <!-- Image Slider -->
+            <div class="image-slider fade-in">
+                <div class="slider-container">
+                    <div class="slider-track" id="sliderTrack">
+                        <div class="slide">
+                            <img src="assets/images/1.jpg" alt="Hostel View 1">
+                            <div class="slide-overlay">
+                                <h3>Modern Accommodation</h3>
+                                <p>Experience comfortable living in our state-of-the-art hostels</p>
+                            </div>
+                        </div>
+                        <div class="slide">
+                            <img src="assets/images/2.jpg" alt="Hostel View 2">
+                            <div class="slide-overlay">
+                                <h3>Study Spaces</h3>
+                                <p>Dedicated areas for focused academic work</p>
+                            </div>
+                        </div>
+                        <div class="slide">
+                            <img src="assets/images/3.jpg" alt="Hostel View 3">
+                            <div class="slide-overlay">
+                                <h3>Recreation Facilities</h3>
+                                <p>Relax and unwind in our common areas</p>
+                            </div>
+                        </div>
+                        <div class="slide">
+                            <img src="assets/images/4.jpg" alt="Hostel View 4">
+                            <div class="slide-overlay">
+                                <h3>Safe Environment</h3>
+                                <p>24/7 security for your peace of mind</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="slider-arrow prev" onclick="app.prevSlide()">‹</button>
+                    <button class="slider-arrow next" onclick="app.nextSlide()">›</button>
+                    <div class="slider-nav" id="sliderNav"></div>
+                </div>
+            </div>
+
+            <!-- Profile Section -->
+            <div class="profile-section fade-in" style="animation-delay: 0.1s">
+                <div class="profile-header">
+                    <div class="profile-avatar">
+                        <img src="assets/images/logo.png" alt="Profile" id="profileImage">
+                        <label class="avatar-upload" title="Change profile picture">
+                            <i class="fas fa-camera"></i>
+                            <input type="file" accept="image/*" onchange="app.updateProfilePicture(event)">
+                        </label>
+                    </div>
+                    <div class="profile-info">
+                        <h2>${this.currentUser?.name || 'Student Name'}</h2>
+                        <p><i class="fas fa-id-card"></i> Reg No: ${this.currentUser?.registration_number || 'N/A'}</p>
+                        <p><i class="fas fa-envelope"></i> ${this.currentUser?.email || 'email@au.edu'}</p>
+                        <p><i class="fas fa-graduation-cap"></i> ${this.currentUser?.program || 'Program'} - Year ${this.currentUser?.yearOfStudy || '1'}</p>
+                        <button class="btn btn-outline mt-2" onclick="app.editProfile()">
+                            <i class="fas fa-edit"></i> Edit Profile
+                        </button>
+                    </div>
+                    <div class="notification-bell" onclick="app.toggleNotifications()">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-count" id="notificationCount">3</span>
+                        <div class="notification-dropdown" id="notificationDropdown">
+                            <div class="notification-header">
+                                <h4>Notifications</h4>
+                                <a href="#" class="mark-all-read" onclick="app.markAllRead(event)">Mark all read</a>
+                            </div>
+                            <div class="notification-list">
+                                <div class="notification-item unread" style="display: flex; align-items: flex-start;">
+                                    <div class="notification-icon">
+                                        <i class="fas fa-check-circle" style="color: var(--accent-green);"></i>
+                                    </div>
+                                    <div class="notification-content">
+                                        <div class="notification-title">Application Approved</div>
+                                        <div class="notification-text">Your accommodation application has been approved!</div>
+                                        <div class="notification-time">2 hours ago</div>
+                                    </div>
+                                </div>
+                                <div class="notification-item unread" style="display: flex; align-items: flex-start;">
+                                    <div class="notification-icon">
+                                        <i class="fas fa-home" style="color: var(--accent-blue);"></i>
+                                    </div>
+                                    <div class="notification-content">
+                                        <div class="notification-title">Room Allocated</div>
+                                        <div class="notification-text">You've been assigned to Room A-101</div>
+                                        <div class="notification-time">5 hours ago</div>
+                                    </div>
+                                </div>
+                                <div class="notification-item" style="display: flex; align-items: flex-start;">
+                                    <div class="notification-icon">
+                                        <i class="fas fa-info-circle" style="color: var(--accent-orange);"></i>
+                                    </div>
+                                    <div class="notification-content">
+                                        <div class="notification-title">Deadline Reminder</div>
+                                        <div class="notification-text">Application deadline: Dec 15, 2024</div>
+                                        <div class="notification-time">1 day ago</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="profile-stats">
+                    <div class="stat-box">
+                        <span class="stat-value">1</span>
+                        <span class="stat-label">Active Application</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value">A-101</span>
+                        <span class="stat-label">Room Number</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value">Approved</span>
+                        <span class="stat-label">Status</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value">2026S1</span>
+                        <span class="stat-label">Semester</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="dashboard-grid">
                 <!-- Application Status -->
-                <div class="card fade-in" style="animation-delay: 0.1s">
+                <div class="card fade-in" style="animation-delay: 0.2s">
                     <div class="card-header">
                         <h3><i class="fas fa-clipboard-check"></i> Application Status</h3>
-                        <span class="status-badge status-pending">
-                            <i class="fas fa-clock"></i> Pending
+                        <span class="status-badge status-approved">
+                            <i class="fas fa-check"></i> Approved
                         </span>
                     </div>
-                    <p>Your application is under review by the warden.</p>
+                    <p>Your application has been approved by the warden.</p>
                     <button class="btn btn-outline mt-2" onclick="app.viewApplicationDetails()">
                         View Details <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>
 
-                <!-- Available Rooms -->
-                <div class="card fade-in" style="animation-delay: 0.2s">
+                <!-- My Room -->
+                <div class="card fade-in" style="animation-delay: 0.3s">
                     <div class="card-header">
-                        <h3><i class="fas fa-bed"></i> Available Rooms</h3>
-                        <div class="card-icon">
-                            <i class="fas fa-home"></i>
-                        </div>
+                        <h3><i class="fas fa-home"></i> My Room</h3>
+                        <span class="status-badge status-approved">
+                            <i class="fas fa-check"></i> Allocated
+                        </span>
                     </div>
-                    <h4>Hostel A: 5 rooms available</h4>
-                    <p>Capacity: 2-4 students per room</p>
-                    <button class="btn btn-primary mt-2" onclick="app.loadPage('rooms')">
-                        Browse Rooms <i class="fas fa-search"></i>
+                    <div class="room-info">
+                        <p><strong>Room:</strong> A-101</p>
+                        <p><strong>Hostel:</strong> Hostel A</p>
+                        <p><strong>Capacity:</strong> 4 students</p>
+                        <p><strong>Occupied:</strong> 3 students</p>
+                    </div>
+                    <button class="btn btn-info mt-2" onclick="app.viewRoomDetails()">
+                        <i class="fas fa-eye"></i> View Room Details
                     </button>
                 </div>
 
                 <!-- Quick Actions -->
-                <div class="card fade-in" style="animation-delay: 0.3s">
+                <div class="card fade-in" style="animation-delay: 0.4s">
                     <div class="card-header">
                         <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
                     </div>
@@ -204,56 +329,14 @@ class HostelApp {
                             <i class="fas fa-history"></i>
                             <span>Check Status</span>
                         </button>
+                        <button class="action-btn" onclick="app.loadPage('rooms')">
+                            <i class="fas fa-bed"></i>
+                            <span>View Rooms</span>
+                        </button>
                         <button class="action-btn" onclick="app.contactWarden()">
                             <i class="fas fa-headset"></i>
                             <span>Contact Warden</span>
                         </button>
-                        <button class="action-btn" onclick="app.viewHostelRules()">
-                            <i class="fas fa-book"></i>
-                            <span>Hostel Rules</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Current Allocation (if allocated) -->
-                <div class="card fade-in" style="animation-delay: 0.4s">
-                    <div class="card-header">
-                        <h3><i class="fas fa-home"></i> My Room</h3>
-                        <span class="status-badge status-success">
-                            <i class="fas fa-check"></i> Allocated
-                        </span>
-                    </div>
-                    <div class="room-info">
-                        <p><strong>Room:</strong> A-101</p>
-                        <p><strong>Hostel:</strong> Hostel A</p>
-                        <p><strong>Roommates:</strong> 2 other students</p>
-                    </div>
-                    <button class="btn btn-info mt-2" onclick="app.viewRoomDetails()">
-                        <i class="fas fa-eye"></i> View Room Details
-                    </button>
-                </div>
-
-                <!-- Notifications -->
-                <div class="card fade-in" style="animation-delay: 0.5s">
-                    <div class="card-header">
-                        <h3><i class="fas fa-bell"></i> Notifications</h3>
-                        <span class="notification-badge">2</span>
-                    </div>
-                    <div class="notification-list">
-                        <div class="notification-item">
-                            <i class="fas fa-info-circle text-blue"></i>
-                            <div>
-                                <p>Application deadline: Dec 15, 2024</p>
-                                <small>2 days remaining</small>
-                            </div>
-                        </div>
-                        <div class="notification-item">
-                            <i class="fas fa-exclamation-triangle text-orange"></i>
-                            <div>
-                                <p>Hostel maintenance scheduled</p>
-                                <small>Dec 20-25, 2024</small>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -1055,8 +1138,230 @@ class HostelApp {
         }
     }
 }
+
+
+
+    // Image Slider Functionality
+    initSlider() {
+        this.currentSlide = 0;
+        this.totalSlides = 4;
+        this.autoSlideInterval = null;
+        
+        // Create slider dots
+        const sliderNav = document.getElementById('sliderNav');
+        if (sliderNav) {
+            for (let i = 0; i < this.totalSlides; i++) {
+                const dot = document.createElement('div');
+                dot.className = `slider-dot ${i === 0 ? 'active' : ''}`;
+                dot.onclick = () => this.goToSlide(i);
+                sliderNav.appendChild(dot);
+            }
+            
+            // Start auto-slide
+            this.startAutoSlide();
+        }
+    }
+
+    nextSlide() {
+        this.currentSlide = (this.currentSlide + 1) % this.totalSlides;
+        this.updateSlider();
+        this.resetAutoSlide();
+    }
+
+    prevSlide() {
+        this.currentSlide = (this.currentSlide - 1 + this.totalSlides) % this.totalSlides;
+        this.updateSlider();
+        this.resetAutoSlide();
+    }
+
+    goToSlide(index) {
+        this.currentSlide = index;
+        this.updateSlider();
+        this.resetAutoSlide();
+    }
+
+    updateSlider() {
+        const track = document.getElementById('sliderTrack');
+        const dots = document.querySelectorAll('.slider-dot');
+        
+        if (track) {
+            track.style.transform = `translateX(-${this.currentSlide * 100}%)`;
+        }
+        
+        dots.forEach((dot, index) => {
+            dot.classList.toggle('active', index === this.currentSlide);
+        });
+    }
+
+    startAutoSlide() {
+        this.autoSlideInterval = setInterval(() => {
+            this.nextSlide();
+        }, 5000); // Change slide every 5 seconds
+    }
+
+    resetAutoSlide() {
+        clearInterval(this.autoSlideInterval);
+        this.startAutoSlide();
+    }
+
+    // Theme Toggle
+    toggleTheme() {
+        const html = document.documentElement;
+        const currentTheme = html.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        html.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        
+        const themeIcon = document.getElementById('themeIcon');
+        const themeText = document.getElementById('themeText');
+        
+        if (themeIcon && themeText) {
+            if (newTheme === 'dark') {
+                themeIcon.className = 'fas fa-sun';
+                themeText.textContent = 'Light';
+            } else {
+                themeIcon.className = 'fas fa-moon';
+                themeText.textContent = 'Dark';
+            }
+        }
+        
+        this.showToast(`Switched to ${newTheme} mode`, 'success');
+    }
+
+    // Notification Management
+    toggleNotifications() {
+        const dropdown = document.getElementById('notificationDropdown');
+        if (dropdown) {
+            dropdown.classList.toggle('show');
+        }
+    }
+
+    markAllRead(event) {
+        event.preventDefault();
+        const notificationItems = document.querySelectorAll('.notification-item.unread');
+        notificationItems.forEach(item => {
+            item.classList.remove('unread');
+        });
+        
+        const notificationCount = document.getElementById('notificationCount');
+        if (notificationCount) {
+            notificationCount.textContent = '0';
+            notificationCount.style.display = 'none';
+        }
+        
+        this.showToast('All notifications marked as read', 'success');
+    }
+
+    // Profile Management
+    updateProfilePicture(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const profileImage = document.getElementById('profileImage');
+                if (profileImage) {
+                    profileImage.src = e.target.result;
+                    this.showToast('Profile picture updated successfully', 'success');
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    editProfile() {
+        this.showToast('Opening profile editor...', 'info');
+        // TODO: Implement profile editing modal
+    }
+
+    viewApplicationDetails() {
+        this.showToast('Loading application details...', 'info');
+        // TODO: Implement application details view
+    }
+
+    viewRoomDetails() {
+        this.showToast('Loading room details...', 'info');
+        // TODO: Implement room details view
+    }
+
+    initPageComponents(page) {
+        // Initialize page-specific components
+        if (page === 'dashboard') {
+            // Initialize slider if on dashboard
+            setTimeout(() => {
+                this.initSlider();
+            }, 100);
+        }
+        
+        // Close notification dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const notificationBell = document.querySelector('.notification-bell');
+            const notificationDropdown = document.getElementById('notificationDropdown');
+            
+            if (notificationBell && notificationDropdown && 
+                !notificationBell.contains(e.target) && 
+                !notificationDropdown.contains(e.target)) {
+                notificationDropdown.classList.remove('show');
+            }
+        });
+    }
+
+    generateRoomCards() {
+        // Generate sample room cards
+        const rooms = [
+            { number: 'A-101', hostel: 'Hostel A', capacity: 4, occupied: 2, type: 'Quad', available: true },
+            { number: 'A-102', hostel: 'Hostel A', capacity: 2, occupied: 1, type: 'Double', available: true },
+            { number: 'A-103', hostel: 'Hostel A', capacity: 4, occupied: 4, type: 'Quad', available: false },
+            { number: 'B-201', hostel: 'Hostel B', capacity: 2, occupied: 0, type: 'Double', available: true },
+            { number: 'B-202', hostel: 'Hostel B', capacity: 4, occupied: 3, type: 'Quad', available: true },
+            { number: 'B-203', hostel: 'Hostel B', capacity: 1, occupied: 0, type: 'Single', available: true },
+        ];
+
+        return rooms.map(room => `
+            <div class="room-card ${room.available ? 'available' : 'full'}">
+                <div class="room-card-header">
+                    <h4>Room ${room.number}</h4>
+                    <span class="room-type">${room.type}</span>
+                </div>
+                <div class="room-info">
+                    <p><i class="fas fa-building"></i> ${room.hostel}</p>
+                    <p><i class="fas fa-users"></i> Capacity: ${room.capacity}</p>
+                    <p><i class="fas fa-user-check"></i> Occupied: ${room.occupied}</p>
+                    <p><i class="fas fa-door-open"></i> Available: ${room.capacity - room.occupied}</p>
+                </div>
+                <div class="availability-meter">
+                    <div class="meter-fill" style="width: ${(room.occupied / room.capacity) * 100}%"></div>
+                </div>
+                <button class="btn ${room.available ? 'btn-primary' : 'btn-outline'}" 
+                        ${!room.available ? 'disabled' : ''} 
+                        onclick="app.selectRoom('${room.number}')">
+                    ${room.available ? '<i class="fas fa-check"></i> Select Room' : '<i class="fas fa-lock"></i> Full'}
+                </button>
+            </div>
+        `).join('');
+    }
+
+    selectRoom(roomNumber) {
+        this.showToast(`Room ${roomNumber} selected. Proceeding to application...`, 'success');
+        setTimeout(() => {
+            this.loadPage('apply');
+        }, 1500);
+    }
+}
+
+// Initialize theme on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+});
+
+// Make theme toggle globally available
+window.toggleTheme = function() {
+    if (window.app) {
+        window.app.toggleTheme();
+    }
+};
+
+// Initialize the app
 const app = new HostelApp();
-
-
-// Initialize the app and make it globally available
-window.app = new HostelApp();
+window.app = app;
