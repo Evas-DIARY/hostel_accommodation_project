@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AU Hostel Accommodation System</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">"
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="#" class="logo">
+                <img src="assets/images/logo.png" alt="AU Logo" class="logo-image">
+                <span>AU Hostels</span>
+            </a>
+            
+            <div class="nav-menu" id="navMenu">
+                <a href="#dashboard" class="nav-link active">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <a href="#apply" class="nav-link student-only">
+                    <i class="fas fa-edit"></i> Apply
+                </a>
+                <a href="#status" class="nav-link student-only">
+                    <i class="fas fa-history"></i> Application Status
+                </a>
+                <a href="pages/allocation.html" class="nav-link"><i class="fas fa-bed"></i> View Rooms</a>
+                <a href="#allocation" class="nav-link admin-only" style="display: none;">
+                    <i class="fas fa-cogs"></i> Room Allocation
+                </a>
+                <a href="#applications" class="nav-link admin-only" style="display: none;">
+                    <i class="fas fa-clipboard-list"></i> Applications
+                </a>
+                <a href="#reports" class="nav-link admin-only" style="display: none;">
+                    <i class="fas fa-chart-bar"></i> Reports
+                </a>
+                
+                <div class="user-profile">
+                    <img src="assets/images/logo.png" alt="User" class="avatar">
+                    <span class="user-name">Loading...</span>
+                    
+                <div class="user-menu">
+                        <a href="pages/login.html"><button class="logout-btn">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button></a> 
+                    </div>
+                </div>
+            </div>
+            
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content" id="mainContent">
+        <!-- Content will be dynamically loaded here -->
+        <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner"></div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3><i class="fas fa-hotel"></i> AU Hostels</h3>
+                <p>African University Hostel Accommodation System</p>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <a href="#apply">Apply Now</a>
+                <a href="#contact">Contact Warden</a>
+                <a href="frontend/documents/hostel_rules.pdf">Hostel Rules</a>
+            </div>
+            <div class="footer-section">
+                <h4>Contact</h4>
+                <p><i class="fas fa-phone"></i> +234 123 456 7890</p>
+                <p><i class="fas fa-envelope"></i> hostels@africau.edu</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 African University. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Notification Toast -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Modals (Hidden by default) -->
+    <div class="modal" id="loginModal">
+        <!-- Login modal content -->
+    </div>
+
+    <!-- Load scripts in correct order: auth first, then api, then main -->
+    <script src="scripts/auth.js"></script>
+    <script src="scripts/api.js"></script>
+    <script src="scripts/main.js"></script>
+    
+    <!-- Initialize the app globally -->
+    <script>
+        // Global app instance
+        let app = null;
+        
+        // Initialize app after all scripts are loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!app) {
+                app = new HostelApp();
+            }
+        });
+        
+        // Fallback initialization if DOMContentLoaded already fired
+        if (document.readyState === 'loading') {
+            // DOM still loading, event will fire
+        } else {
+            // DOM already loaded
+            if (!app) {
+                app = new HostelApp();
+            }
+        }
+    </script>
+</body>
+</html>
