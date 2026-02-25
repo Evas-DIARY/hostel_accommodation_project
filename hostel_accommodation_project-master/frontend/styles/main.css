@@ -1012,7 +1012,7 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(211, 47, 47, 0.15);
+    background: rgba(211, 47, 47, 0.35);
     pointer-events: none;
     z-index: 1;
 }
@@ -2199,4 +2199,10 @@ body {
 .theme-toggle-login i {
     font-size: 1.2rem;
     color: white;
+}
+
+
+/* Hide old floating theme toggle */
+.theme-toggle {
+    display: none !important;
 }

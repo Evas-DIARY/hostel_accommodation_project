@@ -221,7 +221,7 @@ class HostelApp {
                     </div>
                     <div class="profile-info">
                         <h2>${userName}</h2>
-                        <p><i class="fas fa-id-card"></i> ID: ${this.currentUser?.registration_number || this.currentUser?.uid || 'N/A'}</p>
+                        <p><i class="fas fa-id-card"></i> ID: ${this.currentUser?.id || this.currentUser?.registration_number || 'N/A'}</p>
                         <p><i class="fas fa-envelope"></i> ${this.currentUser?.email || 'email@au.edu'}</p>
                         <p><i class="fas fa-graduation-cap"></i> ${this.currentUser?.program || 'Program'}</p>
                         <button class="btn btn-outline mt-2" onclick="app.editProfile()">
@@ -356,15 +356,81 @@ class HostelApp {
     async loadWardenDashboard() {
         return `
             <div class="dashboard-header fade-in">
-                <h1>Welcome back, ${this.currentUser?.name || 'Warden'}!</h1>
-                <p>Manage hostel accommodations and student allocations</p>
+                <h1>Warden Dashboard - ${this.currentUser?.name || 'Warden'}</h1>
+                <p>Manage hostel accommodations, review applications, and allocate rooms</p>
             </div>
 
             <div class="dashboard-grid">
-                <!-- Overview Stats -->
+                <!-- Pending Applications -->
                 <div class="card fade-in" style="animation-delay: 0.1s">
                     <div class="card-header">
-                        <h3><i class="fas fa-chart-bar"></i> Hostel Overview</h3>
+                        <h3><i class="fas fa-clipboard-list"></i> Pending Applications</h3>
+                        <span class="status-badge status-pending">
+                            <i class="fas fa-clock"></i> 12 Pending
+                        </span>
+                    </div>
+                    <div class="application-list">
+                        <div class="application-item" style="padding: 0.75rem; border-bottom: 1px solid var(--secondary-gray);">
+                            <p><strong>John Doe</strong> - Male - BSc AI</p>
+                            <p style="font-size: 0.9rem; color: var(--text-secondary);">Applied: 2 days ago</p>
+                            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                <button class="btn btn-success btn-sm" onclick="app.approveApplication('john-doe')">Approve</button>
+                                <button class="btn btn-danger btn-sm" onclick="app.rejectApplication('john-doe')">Reject</button>
+                            </div>
+                        </div>
+                        <div class="application-item" style="padding: 0.75rem; border-bottom: 1px solid var(--secondary-gray);">
+                            <p><strong>Jane Smith</strong> - Female - BSc CS</p>
+                            <p style="font-size: 0.9rem; color: var(--text-secondary);">Applied: 3 days ago</p>
+                            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                <button class="btn btn-success btn-sm" onclick="app.approveApplication('jane-smith')">Approve</button>
+                                <button class="btn btn-danger btn-sm" onclick="app.rejectApplication('jane-smith')">Reject</button>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary mt-2" onclick="app.loadPage('applications')" style="width: 100%; margin-top: 1rem;">
+                        View All Applications <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <!-- Room Allocation -->
+                <div class="card fade-in" style="animation-delay: 0.2s">
+                    <div class="card-header">
+                        <h3><i class="fas fa-bed"></i> Room Allocation</h3>
+                    </div>
+                    <p>Allocate approved students to available rooms</p>
+                    <div class="stats-grid" style="margin-top: 1rem;">
+                        <div class="stat-item">
+                            <div class="stat-number">65</div>
+                            <div class="stat-label">Available Beds</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">180</div>
+                            <div class="stat-label">Allocated</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary mt-2" onclick="app.loadPage('allocation')" style="width: 100%; margin-top: 1rem;">
+                        <i class="fas fa-plus"></i> Allocate Rooms
+                    </button>
+                </div>
+
+                <!-- Hostel Overview -->
+                <div class="card fade-in" style="animation-delay: 0.3s">
+                    <div class="card-header">
+                        <h3><i class="fas fa-building"></i> Hostel Overview</h3>
+                    </div>
+                    <div class="hostel-blocks">
+                        <p><strong>Girls Hostels (A-H Block):</strong> 120 students</p>
+                        <p><strong>Boys Hostels (I-L Block):</strong> 125 students</p>
+                    </div>
+                    <button class="btn btn-info mt-2" onclick="app.loadPage('rooms')" style="width: 100%; margin-top: 1rem;">
+                        <i class="fas fa-eye"></i> View All Rooms
+                    </button>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="card fade-in" style="animation-delay: 0.4s">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-bar"></i> Statistics</h3>
                     </div>
                     <div class="stats-grid">
                         <div class="stat-item">
@@ -372,135 +438,16 @@ class HostelApp {
                             <div class="stat-label">Total Students</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-number">180</div>
-                            <div class="stat-label">Allocated</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-number">65</div>
-                            <div class="stat-label">Available Beds</div>
-                        </div>
-                        <div class="stat-item">
                             <div class="stat-number">12</div>
-                            <div class="stat-label">Pending Applications</div>
+                            <div class="stat-label">Pending</div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Room Allocation Management -->
-                <div class="card fade-in" style="animation-delay: 0.2s">
-                    <div class="card-header">
-                        <h3><i class="fas fa-bed"></i> Room Management</h3>
-                        <div class="card-icon">
-                            <i class="fas fa-cogs"></i>
+                        <div class="stat-item">
+                            <div class="stat-number">28</div>
+                            <div class="stat-label">Approved</div>
                         </div>
-                    </div>
-                    <p>Manage room allocations and view occupancy</p>
-                    <div class="action-buttons">
-                        <button class="btn btn-primary" onclick="app.loadPage('allocation')">
-                            <i class="fas fa-plus"></i> Allocate Rooms
-                        </button>
-                        <button class="btn btn-info" onclick="app.loadPage('rooms')">
-                            <i class="fas fa-eye"></i> View All Rooms
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Application Management -->
-                <div class="card fade-in" style="animation-delay: 0.3s">
-                    <div class="card-header">
-                        <h3><i class="fas fa-clipboard-list"></i> Applications</h3>
-                        <span class="status-badge status-warning">
-                            <i class="fas fa-clock"></i> 12 Pending
-                        </span>
-                    </div>
-                    <p>Review and process student applications</p>
-                    <button class="btn btn-warning mt-2" onclick="app.loadPage('applications')">
-                        Review Applications <i class="fas fa-arrow-right"></i>
-                    </button>
-                </div>
-
-                <!-- Quick Actions -->
-                <div class="card fade-in" style="animation-delay: 0.4s">
-                    <div class="card-header">
-                        <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
-                    </div>
-                    <div class="action-grid">
-                        <button class="action-btn" onclick="app.generateReports()">
-                            <i class="fas fa-chart-line"></i>
-                            <span>Generate Reports</span>
-                        </button>
-                        <button class="action-btn" onclick="app.manageHostels()">
-                            <i class="fas fa-building"></i>
-                            <span>Manage Hostels</span>
-                        </button>
-                        <button class="action-btn" onclick="app.viewStudents()">
-                            <i class="fas fa-users"></i>
-                            <span>View Students</span>
-                        </button>
-                        <button class="action-btn" onclick="app.systemSettings()">
-                            <i class="fas fa-cog"></i>
-                            <span>System Settings</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Recent Activity -->
-                <div class="card fade-in" style="animation-delay: 0.5s">
-                    <div class="card-header">
-                        <h3><i class="fas fa-history"></i> Recent Activity</h3>
-                    </div>
-                    <div class="activity-list">
-                        <div class="activity-item">
-                            <i class="fas fa-user-plus text-success"></i>
-                            <div>
-                                <p>Room A-101 allocated to John Doe</p>
-                                <small>2 hours ago</small>
-                            </div>
-                        </div>
-                        <div class="activity-item">
-                            <i class="fas fa-file-alt text-info"></i>
-                            <div>
-                                <p>Application approved for Jane Smith</p>
-                                <small>4 hours ago</small>
-                            </div>
-                        </div>
-                        <div class="activity-item">
-                            <i class="fas fa-user-times text-warning"></i>
-                            <div>
-                                <p>Room B-205 vacated by Bob Johnson</p>
-                                <small>1 day ago</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- System Alerts -->
-                <div class="card fade-in" style="animation-delay: 0.6s">
-                    <div class="card-header">
-                        <h3><i class="fas fa-exclamation-triangle"></i> System Alerts</h3>
-                        <span class="notification-badge">3</span>
-                    </div>
-                    <div class="alert-list">
-                        <div class="alert-item alert-warning">
-                            <i class="fas fa-tools"></i>
-                            <div>
-                                <p>Hostel A maintenance scheduled for next week</p>
-                                <small>Action required</small>
-                            </div>
-                        </div>
-                        <div class="alert-item alert-info">
-                            <i class="fas fa-calendar-check"></i>
-                            <div>
-                                <p>Semester allocation deadline approaching</p>
-                                <small>5 days remaining</small>
-                            </div>
-                        </div>
-                        <div class="alert-item alert-success">
-                            <i class="fas fa-check-circle"></i>
-                            <div>
-                                <p>All room inspections completed</p>
-                                <small>Updated today</small>
-                            </div>
+                        <div class="stat-item">
+                            <div class="stat-number">5</div>
+                            <div class="stat-label">Rejected</div>
                         </div>
                     </div>
                 </div>
@@ -509,120 +456,116 @@ class HostelApp {
     }
 
     async loadApplicationForm() {
+        const userGender = this.currentUser?.gender;
         return `
-            <div class="application-form fade-in">
-                <div class="form-header">
-                    <h1><i class="fas fa-edit"></i> Accommodation Application</h1>
-                    <p>Fill out the form below to apply for hostel accommodation</p>
+            <div class="application-form fade-in" style="max-width: 900px; margin: 0 auto;">
+                <div class="form-header" style="text-align: center; margin-bottom: 2rem; background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-dark) 100%); padding: 2rem; border-radius: 16px; color: white;">
+                    <h1 style="color: white; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> Accommodation Application</h1>
+                    <p style="color: rgba(255,255,255,0.9); margin: 0;">Complete your hostel accommodation application</p>
                 </div>
                 
-                <form id="applicationForm" onsubmit="app.submitApplication(event)">
-                    <div class="form-grid">
+                <form id="applicationForm" onsubmit="app.submitApplication(event)" style="background: var(--bg-primary); padding: 2rem; border-radius: 16px; box-shadow: var(--shadow-lg);">
+                    <div class="form-grid" style="display: grid; gap: 2rem;">
                         <!-- Personal Information -->
-                        <div class="form-section">
-                            <h3><i class="fas fa-user"></i> Personal Information</h3>
-                            <div class="form-group">
-                                <label class="form-label">Full Name</label>
-                                <input type="text" class="form-control" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Registration Number</label>
-                                <input type="text" class="form-control" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Gender</label>
-                                <select class="form-control" required>
-                                    <option value="">Select Gender</option>
-                                    <option value="male">Male</option>
-                                    <option value="female">Female</option>
-                                </select>
+                        <div class="form-section" style="background: linear-gradient(135deg, rgba(211, 47, 47, 0.05) 0%, transparent 100%); padding: 1.5rem; border-radius: 12px; border-left: 4px solid var(--primary-red);">
+                            <h3 style="color: var(--primary-red); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-user"></i> Personal Information
+                            </h3>
+                            <div class="form-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                                <div class="form-group">
+                                    <label class="form-label" style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; display: block;">Full Name</label>
+                                    <input type="text" class="form-control" value="${this.currentUser?.name || ''}" readonly style="background: var(--bg-secondary);">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; display: block;">Registration Number</label>
+                                    <input type="text" class="form-control" value="${this.currentUser?.id || ''}" readonly style="background: var(--bg-secondary);">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; display: block;">Gender</label>
+                                    <input type="text" class="form-control" value="${userGender === 'female' ? 'Female' : 'Male'}" readonly style="background: var(--bg-secondary);">
+                                </div>
                             </div>
                         </div>
                         
                         <!-- Academic Information -->
-                        <div class="form-section">
-                            <h3><i class="fas fa-graduation-cap"></i> Academic Information</h3>
-                            <div class="form-group">
-                                <label class="form-label">Program</label>
-                                <select class="form-control" required>
-                                    <option value="">Select Program</option>
-                                    <option value="ai">BSc Artificial Intelligence</option>
-                                    <option value="cs">BSc Computer Science</option>
-                                    <option value="engineering">BSc Engineering</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Year of Study</label>
-                                <select class="form-control" required>
-                                    <option value="">Select Year</option>
-                                    <option value="1">Year 1</option>
-                                    <option value="2">Year 2</option>
-                                    <option value="3">Year 3</option>
-                                    <option value="4">Year 4</option>
-                                </select>
+                        <div class="form-section" style="background: linear-gradient(135deg, rgba(211, 47, 47, 0.05) 0%, transparent 100%); padding: 1.5rem; border-radius: 12px; border-left: 4px solid var(--primary-red);">
+                            <h3 style="color: var(--primary-red); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-graduation-cap"></i> Academic Information
+                            </h3>
+                            <div class="form-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                                <div class="form-group">
+                                    <label class="form-label" style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; display: block;">Program</label>
+                                    <input type="text" class="form-control" value="${this.currentUser?.program || ''}" readonly style="background: var(--bg-secondary);">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; display: block;">Year of Study</label>
+                                    <select class="form-control" required style="padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.3s ease;">
+                                        <option value="">Select Year</option>
+                                        <option value="1">Year 1</option>
+                                        <option value="2">Year 2</option>
+                                        <option value="3">Year 3</option>
+                                        <option value="4">Year 4</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                         
                         <!-- Hostel Preferences -->
-                        <div class="form-section">
-                            <h3><i class="fas fa-home"></i> Hostel Preferences</h3>
+                        <div class="form-section" style="background: linear-gradient(135deg, rgba(211, 47, 47, 0.05) 0%, transparent 100%); padding: 1.5rem; border-radius: 12px; border-left: 4px solid var(--primary-red);">
+                            <h3 style="color: var(--primary-red); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-home"></i> Hostel Preferences
+                            </h3>
                             <div class="form-group">
-                                <label class="form-label">Preferred Hostel (1st Choice)</label>
-                                <select class="form-control" required>
-                                    <option value="">Select Hostel</option>
-                                    <option value="hostel_a">Hostel A - Male</option>
-                                    <option value="hostel_b">Hostel B - Female</option>
-                                    <option value="hostel_c">Hostel C - Mixed</option>
+                                <label class="form-label" style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; display: block;">Preferred Block</label>
+                                <select class="form-control" id="hostelBlock" required style="padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.3s ease;">
+                                    <option value="">Select Block</option>
                                 </select>
+                                <small style="color: var(--text-secondary); margin-top: 0.5rem; display: block; font-style: italic;">
+                                    <i class="fas fa-info-circle"></i> Warden will assign specific hostel within your selected block
+                                </small>
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">Preferred Hostel (2nd Choice)</label>
-                                <select class="form-control">
-                                    <option value="">Select Hostel</option>
-                                    <option value="hostel_a">Hostel A - Male</option>
-                                    <option value="hostel_b">Hostel B - Female</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Room Type Preference</label>
-                                <select class="form-control">
-                                    <option value="">Select Room Type</option>
-                                    <option value="single">Single Room</option>
-                                    <option value="double">Double Room</option>
-                                    <option value="quad">Quad Room (4 persons)</option>
-                                </select>
+                            <div class="form-group" style="margin-top: 1rem;">
+                                <label class="form-label" style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; display: block;">Room Type</label>
+                                <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; border: 2px solid var(--primary-red);">
+                                    <p style="margin: 0; font-weight: 600; color: var(--primary-red);">
+                                        <i class="fas fa-bed"></i> Triple Occupancy (3 Students per Room)
+                                    </p>
+                                    <small style="color: var(--text-secondary); display: block; margin-top: 0.5rem;">All rooms are triple occupancy for both boys and girls</small>
+                                </div>
                             </div>
                         </div>
                         
                         <!-- Special Requirements -->
-                        <div class="form-section">
-                            <h3><i class="fas fa-star"></i> Special Requirements</h3>
+                        <div class="form-section" style="background: linear-gradient(135deg, rgba(211, 47, 47, 0.05) 0%, transparent 100%); padding: 1.5rem; border-radius: 12px; border-left: 4px solid var(--primary-red);">
+                            <h3 style="color: var(--primary-red); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-star"></i> Special Requirements
+                            </h3>
                             <div class="checkbox-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" name="disability">
+                                <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; cursor: pointer; padding: 0.5rem; border-radius: 8px; transition: all 0.3s ease;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='transparent'">
+                                    <input type="checkbox" name="disability" style="width: 18px; height: 18px; cursor: pointer;">
                                     <span>I have a disability requiring special accommodation</span>
                                 </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" name="medical">
+                                <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; cursor: pointer; padding: 0.5rem; border-radius: 8px; transition: all 0.3s ease;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='transparent'">
+                                    <input type="checkbox" name="medical" style="width: 18px; height: 18px; cursor: pointer;">
                                     <span>I have medical conditions requiring attention</span>
                                 </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" name="final_year">
+                                <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; cursor: pointer; padding: 0.5rem; border-radius: 8px; transition: all 0.3s ease;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='transparent'">
+                                    <input type="checkbox" name="final_year" style="width: 18px; height: 18px; cursor: pointer;">
                                     <span>I am a final year student (priority consideration)</span>
                                 </label>
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">Additional Notes (Optional)</label>
-                                <textarea class="form-control" rows="3" placeholder="Any additional information..."></textarea>
+                            <div class="form-group" style="margin-top: 1rem;">
+                                <label class="form-label" style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; display: block;">Additional Notes (Optional)</label>
+                                <textarea class="form-control" rows="4" placeholder="Any additional information..." style="padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; resize: vertical;"></textarea>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-outline" onclick="app.loadPage('dashboard')">
+                    <div class="form-actions" style="display: flex; gap: 1rem; margin-top: 2rem; justify-content: center;">
+                        <button type="button" class="btn btn-outline" onclick="app.loadPage('dashboard')" style="padding: 1rem 2rem; border: 2px solid var(--primary-red); background: transparent; color: var(--primary-red); border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='var(--primary-red)'; this.style.color='white'" onmouseout="this.style.background='transparent'; this.style.color='var(--primary-red)'">
                             <i class="fas fa-arrow-left"></i> Back to Dashboard
                         </button>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary" style="padding: 1rem 2rem; background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-dark) 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(211, 47, 47, 0.3); transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(211, 47, 47, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(211, 47, 47, 0.3)'">
                             <i class="fas fa-paper-plane"></i> Submit Application
                         </button>
                     </div>
@@ -690,39 +633,67 @@ class HostelApp {
     }
 
     async loadRoomView() {
+        const userGender = this.currentUser?.gender;
+        const blocks = userGender === 'female' ? ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] : ['I', 'J', 'K', 'L'];
+        
         return `
-            <div class="room-view-container">
+            <div class="room-view-container fade-in">
                 <div class="page-header">
-                    <h1><i class="fas fa-bed"></i> Available Rooms</h1>
-                    <p>Browse available rooms and check occupancy status</p>
+                    <h1><i class="fas fa-door-open"></i> My Room Details</h1>
+                    <p>View your allocated room information and conditions</p>
                 </div>
 
-                <div class="filters-section">
-                    <div class="filter-group">
-                        <label for="hostelFilter">Hostel:</label>
-                        <select id="hostelFilter">
-                            <option value="">All Hostels</option>
-                            <option value="hostel_a">Hostel A</option>
-                            <option value="hostel_b">Hostel B</option>
-                            <option value="hostel_c">Hostel C</option>
-                        </select>
+                <!-- My Room Card -->
+                <div class="card" style="max-width: 800px; margin: 0 auto 2rem;">
+                    <div class="card-header">
+                        <h3><i class="fas fa-home"></i> Room A-101</h3>
+                        <span class="status-badge status-approved">Allocated</span>
                     </div>
-                    <div class="filter-group">
-                        <label for="capacityFilter">Room Type:</label>
-                        <select id="capacityFilter">
-                            <option value="">All Types</option>
-                            <option value="1">Single</option>
-                            <option value="2">Double</option>
-                            <option value="4">Quad</option>
-                        </select>
+                    <div class="room-details-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0;">
+                        <div>
+                            <p><strong><i class="fas fa-building"></i> Block:</strong> A (Girls)</p>
+                            <p><strong><i class="fas fa-door-closed"></i> Room Number:</strong> 101</p>
+                        </div>
+                        <div>
+                            <p><strong><i class="fas fa-users"></i> Capacity:</strong> 3 Students</p>
+                            <p><strong><i class="fas fa-user-check"></i> Occupied:</strong> 2 Students</p>
+                        </div>
                     </div>
-                    <button class="btn btn-primary" onclick="app.filterRooms()">
-                        <i class="fas fa-filter"></i> Apply Filters
-                    </button>
+                    
+                    <h4 style="margin-top: 1.5rem; color: var(--primary-red);"><i class="fas fa-clipboard-check"></i> Room Condition</h4>
+                    <div class="condition-list" style="margin-top: 1rem;">
+                        <div class="condition-item" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 0.5rem;">
+                            <i class="fas fa-check-circle" style="color: var(--accent-green);"></i>
+                            <span>Beds: Good Condition</span>
+                        </div>
+                        <div class="condition-item" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 0.5rem;">
+                            <i class="fas fa-check-circle" style="color: var(--accent-green);"></i>
+                            <span>Furniture: Excellent</span>
+                        </div>
+                        <div class="condition-item" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 0.5rem;">
+                            <i class="fas fa-check-circle" style="color: var(--accent-green);"></i>
+                            <span>Lighting: Functional</span>
+                        </div>
+                        <div class="condition-item" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 0.5rem;">
+                            <i class="fas fa-check-circle" style="color: var(--accent-green);"></i>
+                            <span>Cleanliness: Maintained</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="room-grid" id="roomGrid">
-                    ${this.generateRoomCards()}
+                <!-- Available Blocks -->
+                <div class="page-header" style="margin-top: 3rem;">
+                    <h2><i class="fas fa-th-large"></i> Available Blocks</h2>
+                    <p>${userGender === 'female' ? 'Girls Hostels (A-H)' : 'Boys Hostels (I-L)'}</p>
+                </div>
+
+                <div class="blocks-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem;">
+                    ${blocks.map(block => `
+                        <div class="block-card" style="background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-dark) 100%); color: white; padding: 2rem; border-radius: 12px; text-align: center; box-shadow: var(--shadow-md); transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                            <h3 style="font-size: 2rem; margin: 0;">Block ${block}</h3>
+                            <p style="margin: 0.5rem 0 0; opacity: 0.9;">${userGender === 'female' ? 'Girls' : 'Boys'}</p>
+                        </div>
+                    `).join('')}
                 </div>
             </div>
         `;
@@ -1303,6 +1274,28 @@ class HostelApp {
             // Initialize slider if on dashboard
             setTimeout(() => {
                 this.initSlider();
+            }, 100);
+        }
+        
+        if (page === 'apply') {
+            // Populate hostel blocks based on gender
+            setTimeout(() => {
+                const hostelBlock = document.getElementById('hostelBlock');
+                const userGender = this.currentUser?.gender;
+                
+                if (hostelBlock && userGender) {
+                    hostelBlock.innerHTML = '<option value="">Select Block</option>';
+                    
+                    if (userGender === 'female') {
+                        ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(block => {
+                            hostelBlock.innerHTML += `<option value="${block}">Block ${block} (Girls)</option>`;
+                        });
+                    } else if (userGender === 'male') {
+                        ['I', 'J', 'K', 'L'].forEach(block => {
+                            hostelBlock.innerHTML += `<option value="${block}">Block ${block} (Boys)</option>`;
+                        });
+                    }
+                }
             }, 100);
         }
         

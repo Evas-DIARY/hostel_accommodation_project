@@ -234,7 +234,8 @@ class AuthManager {
             role: profile?.role || 'student',
             id: profile?.registration_number || user.uid,
             email: profile?.email || user.email,
-            program: profile?.program || 'N/A'
+            program: profile?.program || 'N/A',
+            gender: profile?.gender || 'N/A'
         };
 
         // If we're on the login page, redirect to main page
