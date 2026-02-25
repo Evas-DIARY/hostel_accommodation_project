@@ -154,10 +154,20 @@ class HostelApp {
     }
 
     async loadStudentDashboard() {
+        const quotes = [
+            "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+            "Believe you can and you're halfway there.",
+            "The future belongs to those who believe in the beauty of their dreams.",
+            "Education is the most powerful weapon which you can use to change the world.",
+            "Your time is limited, don't waste it living someone else's life."
+        ];
+        const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+        const userName = this.currentUser?.name || this.currentUser?.full_name || 'Student';
+        
         return `
             <div class="dashboard-header fade-in">
-                <h1>Welcome back, ${this.currentUser?.name || 'Student'}!</h1>
-                <p>Manage your hostel accommodation</p>
+                <h1>Welcome back, ${userName}!</h1>
+                <p style="font-style:italic;color:var(--text-secondary);margin-top:0.5rem">"${randomQuote}"</p>
             </div>
 
             <!-- Image Slider -->
@@ -167,14 +177,14 @@ class HostelApp {
                         <div class="slide">
                             <img src="assets/images/1.jpg" alt="Hostel View 1">
                             <div class="slide-overlay">
-                                <h3>Modern Accommodation</h3>
+                                <h3>Welcome, ${userName}!</h3>
                                 <p>Experience comfortable living in our state-of-the-art hostels</p>
                             </div>
                         </div>
                         <div class="slide">
                             <img src="assets/images/2.jpg" alt="Hostel View 2">
                             <div class="slide-overlay">
-                                <h3>Study Spaces</h3>
+                                <h3>Study Spaces for ${userName}</h3>
                                 <p>Dedicated areas for focused academic work</p>
                             </div>
                         </div>
@@ -210,10 +220,10 @@ class HostelApp {
                         </label>
                     </div>
                     <div class="profile-info">
-                        <h2>${this.currentUser?.name || 'Student Name'}</h2>
-                        <p><i class="fas fa-id-card"></i> Reg No: ${this.currentUser?.registration_number || 'N/A'}</p>
+                        <h2>${userName}</h2>
+                        <p><i class="fas fa-id-card"></i> ID: ${this.currentUser?.registration_number || this.currentUser?.uid || 'N/A'}</p>
                         <p><i class="fas fa-envelope"></i> ${this.currentUser?.email || 'email@au.edu'}</p>
-                        <p><i class="fas fa-graduation-cap"></i> ${this.currentUser?.program || 'Program'} - Year ${this.currentUser?.yearOfStudy || '1'}</p>
+                        <p><i class="fas fa-graduation-cap"></i> ${this.currentUser?.program || 'Program'}</p>
                         <button class="btn btn-outline mt-2" onclick="app.editProfile()">
                             <i class="fas fa-edit"></i> Edit Profile
                         </button>

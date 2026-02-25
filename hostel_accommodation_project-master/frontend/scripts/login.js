@@ -73,6 +73,7 @@ async function handleRegister(event) {
     const name = document.getElementById('registerName').value;
     const regNo = document.getElementById('registerRegNo').value;
     const email = document.getElementById('registerEmail').value;
+    const course = document.getElementById('registerCourse').value;
     const roleElement = document.querySelector('input[name="registerRole"]:checked');
     const role = roleElement ? roleElement.value : 'student';
     const password = document.getElementById('registerPassword').value;
@@ -105,6 +106,7 @@ async function handleRegister(event) {
             email: email,
             role: role,
             registration_number: regNo,
+            program: course,
             created_at: new Date()
         };
 

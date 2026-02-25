@@ -991,9 +991,9 @@ body {
 
 .login-page {
     min-height: 100vh;
-    background: linear-gradient(135deg, rgba(211, 47, 47, 0.9) 0%, rgba(154, 0, 7, 0.9) 100%),
-                url('../assets/images/1.png') center/cover no-repeat;
-    background-blend-mode: overlay;
+    background: url('../assets/images/1.jpg') center center no-repeat;
+    background-size: cover;
+    background-attachment: fixed;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1001,10 +1001,26 @@ body {
     position: relative;
     overflow: hidden;
     padding: var(--spacing-lg) 0;
-    backdrop-filter: blur(5px);
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+}
+
+.login-page::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(211, 47, 47, 0.15);
+    pointer-events: none;
+    z-index: 1;
 }
 
 .login-container {
+    position: relative;
+    z-index: 2;
+}
     width: 100%;
     max-width: 1200px;
     padding: var(--spacing-lg);
@@ -2133,4 +2149,54 @@ body {
 [data-theme="dark"] .login-card {
     background: rgba(45, 45, 45, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+
+/* ===== Theme Toggle Navbar ===== */
+.theme-toggle-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.theme-toggle-nav:hover {
+    color: var(--secondary-white);
+    transform: scale(1.1);
+}
+
+.theme-toggle-nav i {
+    font-size: 1.2rem;
+}
+
+/* ===== Theme Toggle Login ===== */
+.theme-toggle-login {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.theme-toggle-login:hover {
+    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.theme-toggle-login i {
+    font-size: 1.2rem;
+    color: white;
 }

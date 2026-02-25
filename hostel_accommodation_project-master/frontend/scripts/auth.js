@@ -230,9 +230,11 @@ class AuthManager {
 
         window.app.currentUser = {
             name: profile?.full_name || profile?.name || user.email || user.displayName,
+            full_name: profile?.full_name || profile?.name || user.displayName,
             role: profile?.role || 'student',
-            id: user.uid,
-            email: user.email
+            id: profile?.registration_number || user.uid,
+            email: profile?.email || user.email,
+            program: profile?.program || 'N/A'
         };
 
         // If we're on the login page, redirect to main page
