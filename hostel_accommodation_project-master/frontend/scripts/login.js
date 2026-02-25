@@ -78,8 +78,6 @@ async function handleRegister(event) {
     const password = document.getElementById('registerPassword').value;
     const confirmPassword = document.getElementById('registerConfirmPassword').value;
 
-    console.log('Registration attempt:', { name, regNo, email, role, password: password ? '***' : '' });
-
     // Validate passwords match
     if (password !== confirmPassword) {
         showToast('Passwords do not match.', 'error');
@@ -92,11 +90,15 @@ async function handleRegister(event) {
         return;
     }
 
-    // Show loading
+    // Validate 6-digit registration number
+    if (!/^\d{6}$/.test(regNo)) {
+        showToast('Registration number must be exactly 6 digits.', 'error');
+        return;
+    }
+
     showLoading(true);
 
     try {
-        // Prepare user data
         const userData = {
             name: name,
             full_name: name,
@@ -106,23 +108,19 @@ async function handleRegister(event) {
             created_at: new Date()
         };
 
-        console.log('User data prepared:', userData);
-
-        // Attempt registration
-        console.log('Calling authManager.signUp...');
         const result = await authManager.signUp(email, password, userData);
-        console.log('Registration result:', result);
 
         if (result.success) {
-            showToast('Account created successfully! Welcome to AU Hostel System.', 'success');
+            showToast('Account created successfully! Please login with your 6-digit ID and password.', 'success');
 
-            // Redirect to dashboard after a short delay
+            // Redirect to login tab after 2 seconds
             setTimeout(() => {
-                redirectToDashboard();
+                switchTab('login');
+                // Pre-fill the registration number
+                document.getElementById('loginIdentifier').value = regNo;
             }, 2000);
 
         } else {
-            console.error('Registration failed:', result.error);
             showToast(result.error || 'Registration failed. Please try again.', 'error');
         }
 

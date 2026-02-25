@@ -113,7 +113,10 @@ class AuthManager {
 
                 await setDoc(doc(window.firebaseDb, 'users', result.user.uid), userDoc);
 
-                return { success: true, user: result.user };
+                // Sign out immediately after registration
+                await this.signOut();
+
+                return { success: true, user: result.user, shouldRedirectToLogin: true };
             } catch (error) {
                 return { success: false, error: this.getErrorMessage(error.code) };
             }
@@ -151,17 +154,8 @@ class AuthManager {
                 users.push(newUser);
                 this.saveUsersToJSON(users);
 
-                const userObj = {
-                    uid: newUser.uid,
-                    email: newUser.email,
-                    displayName: newUser.name
-                };
-
-                this.user = userObj;
-                localStorage.setItem('currentUser', JSON.stringify(userObj));
-
                 console.log('Registration successful');
-                return { success: true, user: userObj };
+                return { success: true, user: { uid: newUser.uid }, shouldRedirectToLogin: true };
             } catch (error) {
                 console.error('Registration error:', error);
                 return { success: false, error: 'Failed to register user. Please try again.' };
@@ -228,7 +222,13 @@ class AuthManager {
 
         const profile = await this.getUserProfile(user.uid);
 
-        app.currentUser = {
+        // Wait for app to be available
+        if (typeof window.app === 'undefined') {
+            setTimeout(() => this.onLogin(user), 100);
+            return;
+        }
+
+        window.app.currentUser = {
             name: profile?.full_name || profile?.name || user.email || user.displayName,
             role: profile?.role || 'student',
             id: user.uid,
@@ -238,28 +238,28 @@ class AuthManager {
         // If we're on the login page, redirect to main page
         if (window.location.pathname.includes('login.html')) {
             window.location.href = '../index.html';
-        } else if (typeof app !== 'undefined') {
+        } else if (typeof window.app !== 'undefined') {
             // If app object exists, update UI
-            this.updateUIBasedOnRole(app.currentUser.role);
+            this.updateUIBasedOnRole(window.app.currentUser.role);
 
             const userNameElement = document.querySelector('.user-name');
             if (userNameElement) {
-                userNameElement.textContent = app.currentUser.name;
+                userNameElement.textContent = window.app.currentUser.name;
             }
 
             // Only load dashboard if we're not already loading it
-            if (!window.location.pathname.includes('index.html') || !app.currentUser) {
-                app.loadDashboard();
+            if (!window.location.pathname.includes('index.html') || !window.app.currentUser) {
+                window.app.loadDashboard();
             }
         }
     }
 
     onLogout() {
         console.log('User logged out');
-        if (typeof app !== 'undefined') {
-            app.currentUser = null;
-            if (app.loadPage) {
-                app.loadPage('login');
+        if (typeof window.app !== 'undefined') {
+            window.app.currentUser = null;
+            if (window.app.loadPage) {
+                window.app.loadPage('login');
             }
         } else {
             // If app object doesn't exist, redirect to login page

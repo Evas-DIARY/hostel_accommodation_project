@@ -1137,7 +1137,10 @@ class HostelApp {
             this.showToast('Error logging out', 'error');
         }
     }
-}
+
+    async loadApplicationStatus() {
+        return '<div class="page-header"><h1>Application Status</h1><p>View your application status here</p></div>';
+    }
 
 
 
@@ -1363,5 +1366,8 @@ window.toggleTheme = function() {
 };
 
 // Initialize the app
-const app = new HostelApp();
-window.app = app;
+// Initialize the app
+window.addEventListener('DOMContentLoaded', () => {
+    const app = new HostelApp();
+    window.app = app;
+});
