@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - AU Hostel Accommodation System</title>
+    <link rel="stylesheet" href="../styles/main.css">
+    <link rel="stylesheet" href="../styles/responsive.css">
+    <link rel="stylesheet" href="../styles/utilities.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+        import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+        // Firebase configuration (replace with your actual config)
+        const firebaseConfig = {
+    apiKey: "AIzaSyCiQ6ACTlxFqLEuE74oSt0qa0Unt__k3MQ",
+    authDomain: "hostel-accommodation.firebaseapp.com",
+    projectId: "hostel-accommodation",
+    storageBucket: "hostel-accommodation.firebasestorage.app",
+    messagingSenderId: "555245765651",
+    appId: "1:555245765651:web:40021d66399e93c23e2be6",
+    measurementId: "G-HXP8PRJEV7"
+  };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const analytics = getAnalytics(app);
+        // Initialize Firebase
+      
+   
+
+        // Make auth and db available globally
+        window.firebaseAuth = auth;
+        window.firebaseDb = db;
+        window.firebaseFunctions = { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, doc, setDoc, getDoc };
+    </script>
+</head>
+<body>
+    <div class="login-page">
+        <div class="login-container">
+            <div class="login-header">
+                <div class="logo-section">
+                    <img src="../assets/images/logo.png" alt="AU Logo" class="login-logo">
+                    <h1>Africa University</h1>
+                    <p>Hostel Accommodation System</p>
+                </div>
+            </div>
+
+            <div class="login-card">
+                <div class="login-tabs">
+                    <button class="tab-btn active" onclick="switchTab('login')">Login</button>
+                    <button class="tab-btn" onclick="switchTab('register')">Register</button>
+                </div>
+
+                <!-- Login Form -->
+                <div id="loginForm" class="auth-form">
+                    <div class="form-header">
+                        <h2><i class="fas fa-sign-in-alt"></i> Welcome Back</h2>
+                        <p>Please sign in to your account</p>
+                    </div>
+
+                    <form onsubmit="handleLogin(event)">
+                        <div class="form-group">
+                            <label class="form-label">Email or Registration Number</label>
+                            <div class="input-group">
+                                <i class="fas fa-envelope input-icon"></i>
+                                <input type="text" id="loginIdentifier" class="form-control" placeholder="Enter your email or 6-digit registration number" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <div class="input-group">
+                                <i class="fas fa-lock input-icon"></i>
+                                <input type="password" id="loginPassword" class="form-control" placeholder="Enter your password" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Login As</label>
+                            <div class="role-selector">
+                                <label class="role-option">
+                                    <input type="radio" name="userRole" value="student" checked>
+                                    <span class="role-label">
+                                        <i class="fas fa-user-graduate"></i>
+                                        Student
+                                    </span>
+                                </label>
+                                <label class="role-option">
+                                    <input type="radio" name="userRole" value="warden">
+                                    <span class="role-label">
+                                        <i class="fas fa-user-shield"></i>
+                                        Warden
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary btn-block" id="loginBtn">
+                                <i class="fas fa-sign-in-alt"></i> Sign In
+                            </button>
+                        </div>
+
+                        <div class="form-footer">
+                            <a href="#" onclick="showForgotPassword()">Forgot Password?</a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Register Form -->
+                <div id="registerForm" class="auth-form hidden">
+                    <div class="form-header">
+                        <h2><i class="fas fa-user-plus"></i> Create Account</h2>
+                        <p>Join the AU Hostel Accommodation System</p>
+                    </div>
+
+                    <form onsubmit="handleRegister(event)">
+                        <div class="form-group">
+                            <label class="form-label">Full Name</label>
+                            <div class="input-group">
+                                <i class="fas fa-user input-icon"></i>
+                                <input type="text" id="registerName" class="form-control" placeholder="Enter full name" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Registration Number</label>
+                            <div class="input-group">
+                                <i class="fas fa-id-card input-icon"></i>
+                                <input type="text" id="registerRegNo" class="form-control" placeholder="Enter 6-digit registration number" maxlength="6" pattern="[0-9]{6}" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Email Address</label>
+                            <div class="input-group">
+                                <i class="fas fa-envelope input-icon"></i>
+                                <input type="email" id="registerEmail" class="form-control" placeholder="Enter your email" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Account Type</label>
+                            <div class="role-selector">
+                                <label class="role-option">
+                                    <input type="radio" name="registerRole" value="student" checked>
+                                    <span class="role-label">
+                                        <i class="fas fa-user-graduate"></i>
+                                        Student
+                                    </span>
+                                </label>
+                                <label class="role-option">
+                                    <input type="radio" name="registerRole" value="warden">
+                                    <span class="role-label">
+                                        <i class="fas fa-user-shield"></i>
+                                        Warden
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <div class="input-group">
+                                <i class="fas fa-lock input-icon"></i>
+                                <input type="password" id="registerPassword" class="form-control" placeholder="Create password" required minlength="6">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Confirm Password</label>
+                            <div class="input-group">
+                                <i class="fas fa-lock input-icon"></i>
+                                <input type="password" id="registerConfirmPassword" class="form-control" placeholder="Confirm password" required minlength="6">
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary btn-block" id="registerBtn">
+                                <i class="fas fa-user-plus"></i> Create Account
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="login-footer">
+            <p>&copy; 2026 Africa University. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+                <a href="#">Support</a>
+            </div>
+        </div>
+
+      
+
+        <!-- Background Elements -->
+        <div class="background-elements">
+            <div class="bg-shape shape-1"></div>
+            <div class="bg-shape shape-2"></div>
+            <div class="bg-shape shape-3"></div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Authenticating...</p>
+        </div>
+    </div>
+
+    <script src="../scripts/auth.js"></script>
+    <script src="../scripts/login.js"></script>
+</body>
+</html>
