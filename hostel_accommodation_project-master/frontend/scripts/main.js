@@ -634,68 +634,142 @@ class HostelApp {
 
     async loadRoomView() {
         const userGender = this.currentUser?.gender;
-        const blocks = userGender === 'female' ? ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] : ['I', 'J', 'K', 'L'];
+        const userRole = this.currentUser?.role || 'student';
+        
+        // Generate mock rooms data
+        const rooms = this.generateRoomsData(userGender);
         
         return `
-            <div class="room-view-container fade-in">
-                <div class="page-header">
-                    <h1><i class="fas fa-door-open"></i> My Room Details</h1>
-                    <p>View your allocated room information and conditions</p>
+            <div class="room-explorer-container fade-in">
+                <!-- Hero Header -->
+                <div class="room-explorer-hero" style="background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-dark) 100%); padding: 3rem 2rem; border-radius: 20px; text-align: center; color: white; margin-bottom: 2rem; box-shadow: var(--shadow-lg);">
+                    <h1 style="color: white; font-size: 2.5rem; margin-bottom: 1rem;">
+                        <i class="fas fa-building"></i> Interactive Room Explorer
+                    </h1>
+                    <p style="font-size: 1.2rem; opacity: 0.9; margin: 0;">
+                        Explore available rooms with real-time 3D visualization
+                    </p>
                 </div>
 
-                <!-- My Room Card -->
-                <div class="card" style="max-width: 800px; margin: 0 auto 2rem;">
-                    <div class="card-header">
-                        <h3><i class="fas fa-home"></i> Room A-101</h3>
-                        <span class="status-badge status-approved">Allocated</span>
-                    </div>
-                    <div class="room-details-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0;">
+                <!-- Filter Controls -->
+                <div class="room-filters" style="background: var(--bg-primary); padding: 1.5rem; border-radius: 16px; margin-bottom: 2rem; box-shadow: var(--shadow-md);">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
                         <div>
-                            <p><strong><i class="fas fa-building"></i> Block:</strong> A (Girls)</p>
-                            <p><strong><i class="fas fa-door-closed"></i> Room Number:</strong> 101</p>
+                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">
+                                <i class="fas fa-building"></i> Block
+                            </label>
+                            <select id="blockFilter" onchange="app.filterRoomsByBlock()" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary);">
+                                <option value="all">All Blocks</option>
+                                ${userGender === 'female' ? 
+                                    ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(b => `<option value="${b}">Block ${b}</option>`).join('') :
+                                    ['I', 'J', 'K', 'L'].map(b => `<option value="${b}">Block ${b}</option>`).join('')
+                                }
+                            </select>
                         </div>
                         <div>
-                            <p><strong><i class="fas fa-users"></i> Capacity:</strong> 3 Students</p>
-                            <p><strong><i class="fas fa-user-check"></i> Occupied:</strong> 2 Students</p>
+                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">
+                                <i class="fas fa-door-open"></i> Availability
+                            </label>
+                            <select id="availabilityFilter" onchange="app.filterRoomsByBlock()" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary);">
+                                <option value="all">All Rooms</option>
+                                <option value="available">Available Only</option>
+                                <option value="full">Full Only</option>
+                            </select>
                         </div>
-                    </div>
-                    
-                    <h4 style="margin-top: 1.5rem; color: var(--primary-red);"><i class="fas fa-clipboard-check"></i> Room Condition</h4>
-                    <div class="condition-list" style="margin-top: 1rem;">
-                        <div class="condition-item" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 0.5rem;">
-                            <i class="fas fa-check-circle" style="color: var(--accent-green);"></i>
-                            <span>Beds: Good Condition</span>
+                        <div>
+                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">
+                                <i class="fas fa-sort"></i> Sort By
+                            </label>
+                            <select id="sortFilter" onchange="app.filterRoomsByBlock()" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary);">
+                                <option value="room">Room Number</option>
+                                <option value="availability">Availability</option>
+                                <option value="block">Block</option>
+                            </select>
                         </div>
-                        <div class="condition-item" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 0.5rem;">
-                            <i class="fas fa-check-circle" style="color: var(--accent-green);"></i>
-                            <span>Furniture: Excellent</span>
-                        </div>
-                        <div class="condition-item" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 0.5rem;">
-                            <i class="fas fa-check-circle" style="color: var(--accent-green);"></i>
-                            <span>Lighting: Functional</span>
-                        </div>
-                        <div class="condition-item" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 0.5rem;">
-                            <i class="fas fa-check-circle" style="color: var(--accent-green);"></i>
-                            <span>Cleanliness: Maintained</span>
+                        <div>
+                            <button onclick="app.resetRoomFilters()" class="btn btn-outline" style="width: 100%; padding: 0.75rem; border: 2px solid var(--primary-red); background: transparent; color: var(--primary-red); border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='var(--primary-red)'; this.style.color='white'" onmouseout="this.style.background='transparent'; this.style.color='var(--primary-red)'">
+                                <i class="fas fa-redo"></i> Reset
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Available Blocks -->
-                <div class="page-header" style="margin-top: 3rem;">
-                    <h2><i class="fas fa-th-large"></i> Available Blocks</h2>
-                    <p>${userGender === 'female' ? 'Girls Hostels (A-H)' : 'Boys Hostels (I-L)'}</p>
+                <!-- Stats Overview -->
+                <div class="room-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                    <div class="stat-card-3d" style="background: linear-gradient(135deg, var(--accent-green) 0%, #388E3C 100%); color: white; padding: 1.5rem; border-radius: 16px; box-shadow: var(--shadow-md); transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-5px) rotateX(5deg)'" onmouseout="this.style.transform='translateY(0) rotateX(0)'">
+                        <div style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;">${rooms.filter(r => r.available > 0).length}</div>
+                        <div style="opacity: 0.9;"><i class="fas fa-door-open"></i> Available Rooms</div>
+                    </div>
+                    <div class="stat-card-3d" style="background: linear-gradient(135deg, var(--accent-blue) 0%, #1976D2 100%); color: white; padding: 1.5rem; border-radius: 16px; box-shadow: var(--shadow-md); transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-5px) rotateX(5deg)'" onmouseout="this.style.transform='translateY(0) rotateX(0)'">
+                        <div style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;">${rooms.reduce((sum, r) => sum + r.available, 0)}</div>
+                        <div style="opacity: 0.9;"><i class="fas fa-bed"></i> Total Beds Available</div>
+                    </div>
+                    <div class="stat-card-3d" style="background: linear-gradient(135deg, var(--accent-orange) 0%, #F57C00 100%); color: white; padding: 1.5rem; border-radius: 16px; box-shadow: var(--shadow-md); transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-5px) rotateX(5deg)'" onmouseout="this.style.transform='translateY(0) rotateX(0)'">
+                        <div style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;">${Math.round((rooms.reduce((sum, r) => sum + r.occupied, 0) / rooms.reduce((sum, r) => sum + r.capacity, 0)) * 100)}%</div>
+                        <div style="opacity: 0.9;"><i class="fas fa-chart-pie"></i> Occupancy Rate</div>
+                    </div>
+                    <div class="stat-card-3d" style="background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-dark) 100%); color: white; padding: 1.5rem; border-radius: 16px; box-shadow: var(--shadow-md); transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-5px) rotateX(5deg)'" onmouseout="this.style.transform='translateY(0) rotateX(0)'">
+                        <div style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;">${rooms.length}</div>
+                        <div style="opacity: 0.9;"><i class="fas fa-home"></i> Total Rooms</div>
+                    </div>
                 </div>
 
-                <div class="blocks-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem;">
-                    ${blocks.map(block => `
-                        <div class="block-card" style="background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-dark) 100%); color: white; padding: 2rem; border-radius: 12px; text-align: center; box-shadow: var(--shadow-md); transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
-                            <h3 style="font-size: 2rem; margin: 0;">Block ${block}</h3>
-                            <p style="margin: 0.5rem 0 0; opacity: 0.9;">${userGender === 'female' ? 'Girls' : 'Boys'}</p>
-                        </div>
-                    `).join('')}
+                <!-- 3D Room Grid -->
+                <div id="roomsGrid" class="rooms-3d-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;">
+                    ${rooms.map(room => this.generateRoomCard3D(room)).join('')}
+                </div>
+
+                <!-- Room Details Modal -->
+                <div id="roomModal" class="room-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(5px);" onclick="if(event.target.id==='roomModal') app.closeRoomModal()">
+                    <div class="room-modal-content" style="background: var(--bg-primary); border-radius: 20px; padding: 2rem; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: slideUp 0.3s ease;">
+                        <div id="roomModalBody"></div>
+                    </div>
                 </div>
             </div>
+
+            <style>
+                @keyframes slideUp {
+                    from { opacity: 0; transform: translateY(50px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                
+                .room-card-3d {
+                    perspective: 1000px;
+                    transform-style: preserve-3d;
+                }
+                
+                .room-card-inner {
+                    transition: transform 0.6s;
+                    transform-style: preserve-3d;
+                }
+                
+                .room-card-3d:hover .room-card-inner {
+                    transform: rotateY(5deg) translateY(-10px);
+                }
+                
+                .bed-icon {
+                    display: inline-block;
+                    width: 30px;
+                    height: 30px;
+                    margin: 0.25rem;
+                    border-radius: 6px;
+                    transition: all 0.3s ease;
+                }
+                
+                .bed-icon.occupied {
+                    background: var(--primary-red);
+                    box-shadow: 0 2px 8px rgba(211, 47, 47, 0.4);
+                }
+                
+                .bed-icon.available {
+                    background: var(--accent-green);
+                    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
+                }
+                
+                .bed-icon:hover {
+                    transform: scale(1.2) rotate(5deg);
+                }
+            </style>
         `;
     }
 
@@ -1352,6 +1426,265 @@ class HostelApp {
         setTimeout(() => {
             this.loadPage('apply');
         }, 1500);
+    }
+
+    // Room Explorer Methods
+    generateRoomsData(gender) {
+        const blocks = gender === 'female' ? ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] : ['I', 'J', 'K', 'L'];
+        const rooms = [];
+        
+        blocks.forEach(block => {
+            for (let floor = 1; floor <= 3; floor++) {
+                for (let room = 1; room <= 8; room++) {
+                    const roomNumber = `${block}-${floor}0${room}`;
+                    const capacity = 3; // All rooms are triple occupancy
+                    const occupied = Math.floor(Math.random() * 4); // 0-3 students
+                    const available = Math.max(0, capacity - occupied);
+                    
+                    rooms.push({
+                        number: roomNumber,
+                        block: block,
+                        floor: floor,
+                        capacity: capacity,
+                        occupied: occupied,
+                        available: available,
+                        amenities: ['WiFi', 'Study Desk', 'Wardrobe', 'Fan'],
+                        condition: ['Excellent', 'Good', 'Fair'][Math.floor(Math.random() * 3)],
+                        lastCleaned: `${Math.floor(Math.random() * 7) + 1} days ago`
+                    });
+                }
+            }
+        });
+        
+        return rooms;
+    }
+
+    generateRoomCard3D(room) {
+        const availabilityPercent = (room.available / room.capacity) * 100;
+        const statusColor = room.available === 0 ? 'var(--third-light)' : 
+                           room.available === room.capacity ? 'var(--accent-green)' : 
+                           'var(--accent-orange)';
+        
+        return `
+            <div class="room-card-3d" data-block="${room.block}" data-available="${room.available > 0 ? 'available' : 'full'}">
+                <div class="room-card-inner" style="background: var(--bg-primary); border-radius: 16px; padding: 1.5rem; box-shadow: var(--shadow-lg); border-left: 4px solid ${statusColor}; cursor: pointer;" onclick="app.showRoomDetails('${room.number}')">
+                    <!-- Room Header -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="color: var(--primary-red); margin: 0; font-size: 1.5rem;">
+                            <i class="fas fa-door-closed"></i> ${room.number}
+                        </h3>
+                        <span style="background: ${statusColor}; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
+                            ${room.available > 0 ? `${room.available} Available` : 'Full'}
+                        </span>
+                    </div>
+                    
+                    <!-- Visual Bed Layout -->
+                    <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 12px; margin-bottom: 1rem;">
+                        <div style="text-align: center; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">
+                            <i class="fas fa-bed"></i> Bed Layout
+                        </div>
+                        <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 0.5rem;">
+                            ${Array(room.capacity).fill(0).map((_, i) => `
+                                <div class="bed-icon ${i < room.occupied ? 'occupied' : 'available'}" 
+                                     title="${i < room.occupied ? 'Occupied' : 'Available'}">
+                                    <i class="fas fa-bed" style="color: white; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; height: 100%;"></i>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <!-- Room Info -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; font-size: 0.9rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary);">
+                            <i class="fas fa-building" style="color: var(--primary-red);"></i>
+                            <span>Block ${room.block}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary);">
+                            <i class="fas fa-layer-group" style="color: var(--primary-red);"></i>
+                            <span>Floor ${room.floor}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary);">
+                            <i class="fas fa-users" style="color: var(--primary-red);"></i>
+                            <span>${room.occupied}/${room.capacity}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary);">
+                            <i class="fas fa-star" style="color: var(--primary-red);"></i>
+                            <span>${room.condition}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div style="background: var(--bg-secondary); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 1rem;">
+                        <div style="height: 100%; background: linear-gradient(90deg, ${statusColor} 0%, ${statusColor} 100%); width: ${(room.occupied / room.capacity) * 100}%; transition: width 0.3s ease;"></div>
+                    </div>
+                    
+                    <!-- Amenities -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
+                        ${room.amenities.map(amenity => `
+                            <span style="background: var(--bg-secondary); color: var(--text-primary); padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem;">
+                                <i class="fas fa-check" style="color: var(--accent-green); font-size: 0.7rem;"></i>
+                                ${amenity}
+                            </span>
+                        `).join('')}
+                    </div>
+                    
+                    <!-- Action Button -->
+                    <button class="btn ${room.available > 0 ? 'btn-primary' : 'btn-outline'}" 
+                            style="width: 100%; padding: 0.75rem; border-radius: 8px; font-weight: 600; transition: all 0.3s ease; ${room.available === 0 ? 'opacity: 0.5; cursor: not-allowed;' : ''}" 
+                            ${room.available === 0 ? 'disabled' : ''}
+                            onclick="event.stopPropagation(); app.selectRoomForApplication('${room.number}')">
+                        ${room.available > 0 ? 
+                            `<i class="fas fa-hand-pointer"></i> Select This Room` : 
+                            `<i class="fas fa-lock"></i> Room Full`
+                        }
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    showRoomDetails(roomNumber) {
+        const userGender = this.currentUser?.gender;
+        const rooms = this.generateRoomsData(userGender);
+        const room = rooms.find(r => r.number === roomNumber);
+        
+        if (!room) return;
+        
+        const modalBody = document.getElementById('roomModalBody');
+        const modal = document.getElementById('roomModal');
+        
+        modalBody.innerHTML = `
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h2 style="color: var(--primary-red); margin-bottom: 0.5rem;">
+                    <i class="fas fa-door-open"></i> Room ${room.number}
+                </h2>
+                <p style="color: var(--text-secondary);">Detailed Room Information</p>
+            </div>
+            
+            <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                <h3 style="color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-info-circle"></i> Room Details
+                </h3>
+                <div style="display: grid; gap: 0.75rem;">
+                    <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-primary); border-radius: 8px;">
+                        <span style="font-weight: 600;"><i class="fas fa-building"></i> Block:</span>
+                        <span>${room.block} (${userGender === 'female' ? 'Girls' : 'Boys'})</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-primary); border-radius: 8px;">
+                        <span style="font-weight: 600;"><i class="fas fa-layer-group"></i> Floor:</span>
+                        <span>Floor ${room.floor}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-primary); border-radius: 8px;">
+                        <span style="font-weight: 600;"><i class="fas fa-bed"></i> Capacity:</span>
+                        <span>${room.capacity} Students (Triple Occupancy)</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-primary); border-radius: 8px;">
+                        <span style="font-weight: 600;"><i class="fas fa-users"></i> Currently Occupied:</span>
+                        <span>${room.occupied} Students</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-primary); border-radius: 8px;">
+                        <span style="font-weight: 600;"><i class="fas fa-door-open"></i> Available Beds:</span>
+                        <span style="color: ${room.available > 0 ? 'var(--accent-green)' : 'var(--primary-red)'}; font-weight: 700;">${room.available}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-primary); border-radius: 8px;">
+                        <span style="font-weight: 600;"><i class="fas fa-star"></i> Condition:</span>
+                        <span>${room.condition}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-primary); border-radius: 8px;">
+                        <span style="font-weight: 600;"><i class="fas fa-broom"></i> Last Cleaned:</span>
+                        <span>${room.lastCleaned}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                <h3 style="color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-list-check"></i> Amenities
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;">
+                    ${room.amenities.map(amenity => `
+                        <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: var(--bg-primary); border-radius: 8px;">
+                            <i class="fas fa-check-circle" style="color: var(--accent-green);"></i>
+                            <span>${amenity}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 1rem;">
+                <button onclick="app.closeRoomModal()" class="btn btn-outline" style="flex: 1; padding: 0.75rem; border: 2px solid var(--primary-red); background: transparent; color: var(--primary-red); border-radius: 8px; font-weight: 600;">
+                    <i class="fas fa-times"></i> Close
+                </button>
+                <button onclick="app.selectRoomForApplication('${room.number}')" class="btn btn-primary" style="flex: 1; padding: 0.75rem; background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-dark) 100%); color: white; border: none; border-radius: 8px; font-weight: 600; ${room.available === 0 ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${room.available === 0 ? 'disabled' : ''}>
+                    <i class="fas fa-hand-pointer"></i> Select Room
+                </button>
+            </div>
+        `;
+        
+        modal.style.display = 'flex';
+    }
+
+    closeRoomModal() {
+        const modal = document.getElementById('roomModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    selectRoomForApplication(roomNumber) {
+        this.closeRoomModal();
+        this.showToast(`Room ${roomNumber} selected! Redirecting to application...`, 'success');
+        setTimeout(() => {
+            this.loadPage('apply');
+        }, 1500);
+    }
+
+    filterRoomsByBlock() {
+        const blockFilter = document.getElementById('blockFilter')?.value || 'all';
+        const availabilityFilter = document.getElementById('availabilityFilter')?.value || 'all';
+        const sortFilter = document.getElementById('sortFilter')?.value || 'room';
+        
+        const roomCards = document.querySelectorAll('.room-card-3d');
+        let visibleCount = 0;
+        
+        roomCards.forEach(card => {
+            const cardBlock = card.getAttribute('data-block');
+            const cardAvailable = card.getAttribute('data-available');
+            
+            let showCard = true;
+            
+            if (blockFilter !== 'all' && cardBlock !== blockFilter) {
+                showCard = false;
+            }
+            
+            if (availabilityFilter === 'available' && cardAvailable !== 'available') {
+                showCard = false;
+            } else if (availabilityFilter === 'full' && cardAvailable !== 'full') {
+                showCard = false;
+            }
+            
+            card.style.display = showCard ? 'block' : 'none';
+            if (showCard) visibleCount++;
+        });
+        
+        this.showToast(`Showing ${visibleCount} rooms`, 'info');
+    }
+
+    resetRoomFilters() {
+        const blockFilter = document.getElementById('blockFilter');
+        const availabilityFilter = document.getElementById('availabilityFilter');
+        const sortFilter = document.getElementById('sortFilter');
+        
+        if (blockFilter) blockFilter.value = 'all';
+        if (availabilityFilter) availabilityFilter.value = 'all';
+        if (sortFilter) sortFilter.value = 'room';
+        
+        const roomCards = document.querySelectorAll('.room-card-3d');
+        roomCards.forEach(card => {
+            card.style.display = 'block';
+        });
+        
+        this.showToast('Filters reset', 'success');
     }
 }
 
