@@ -2,20 +2,23 @@
 class HostelApp {
     constructor() {
         this.currentUser = null;
-        this.init();
     }
 
-    init() {
+    async init() {
         // DOM Elements
         this.navMenu = document.getElementById('navMenu');
         this.mobileMenuBtn = document.getElementById('mobileMenuBtn');
         this.mainContent = document.getElementById('mainContent');
         this.loadingSpinner = document.getElementById('loadingSpinner');
 
+        // Initialize Firebase service first to enable persistence before any DB calls
+        if (typeof window.firebaseAuth !== 'undefined' && window.firebaseService) {
+            await window.firebaseService.init();
+        }
+
         // Initialize auth manager
         authManager.init();
         
-
         // Check authentication and setup
         this.checkAuth();
         this.setupEventListeners();
@@ -1703,7 +1706,8 @@ window.toggleTheme = function() {
 
 // Initialize the app
 // Initialize the app
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
     const app = new HostelApp();
     window.app = app;
+    await app.init();
 });

@@ -1,0 +1,76 @@
+🔥 CREATE FIRESTORE DATABASE - URGENT FIX
+==========================================
+
+## THE PROBLEM
+Your Firebase project exists, but the Firestore database hasn't been created yet.
+
+## THE SOLUTION (5 MINUTES)
+
+### Step 1: Open Firebase Console
+1. Go to: https://console.firebase.google.com
+2. Click on your project: "hostel-accommodation"
+
+### Step 2: Create Firestore Database
+1. In the left sidebar, click "Firestore Database" (or "Build" → "Firestore Database")
+2. Click the "Create database" button
+3. Choose "Start in TEST MODE" (for now)
+4. Click "Next"
+5. Select location: Choose closest to you (e.g., "us-central" or "europe-west")
+6. Click "Enable"
+7. Wait 30-60 seconds for database to be created
+
+### Step 3: Set Security Rules (Important!)
+Once database is created, click "Rules" tab and paste this:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read/write to all for testing
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+```
+
+Click "Publish"
+
+### Step 4: Verify It Works
+1. Go back to your login page
+2. Refresh (Ctrl+F5)
+3. Check console - you should see:
+   ✅ Created: ID 123456 (password: student123)
+   ✅ Created: ID 999999 (password: warden123)
+
+### Step 5: Login
+- ID: 123456
+- Password: student123
+
+==========================================
+
+## ALTERNATIVE: Quick Link
+Click this direct link to create database:
+https://console.cloud.google.com/datastore/setup?project=hostel-accommodation
+
+Then follow steps 2-5 above.
+
+==========================================
+
+## TROUBLESHOOTING
+
+**"Permission denied" error?**
+- Make sure you're logged into Firebase Console with the correct Google account
+- Make sure you selected "Test mode" not "Production mode"
+
+**Database creation stuck?**
+- Wait 2-3 minutes
+- Refresh the Firebase Console page
+- Try again
+
+**Still not working?**
+- Clear browser cache
+- Try incognito mode
+- Make sure you're the owner of the Firebase project
+
+==========================================

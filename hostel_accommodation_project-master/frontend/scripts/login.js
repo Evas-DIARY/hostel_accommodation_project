@@ -1,16 +1,27 @@
 // Login Page JavaScript
 document.addEventListener('DOMContentLoaded', function() {
+    // Clear redirect flag
+    sessionStorage.removeItem('redirecting');
+    
+    // Sign out any existing user when landing on login page
+    if (window.firebaseAuth && window.firebaseAuth.currentUser) {
+        const { signOut } = window.firebaseFunctions;
+        signOut(window.firebaseAuth).catch(() => {});
+    }
+    
     // Initialize auth manager
     authManager.init();
 
-    // Check if user is already logged in
-    if (authManager.isAuthenticated()) {
-        redirectToDashboard();
-        return;
-    }
-
     // Setup form validation
     setupFormValidation();
+    
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    const themeIcon = document.getElementById('themeIcon');
+    if (themeIcon && savedTheme === 'dark') {
+        themeIcon.className = 'fas fa-sun';
+    }
 });
 
 // Tab switching functionality
@@ -26,41 +37,64 @@ function switchTab(tab) {
 async function handleLogin(event) {
     event.preventDefault();
 
-    const identifier = document.getElementById('loginIdentifier').value;
+    const identifier = document.getElementById('loginIdentifier').value.trim();
     const password = document.getElementById('loginPassword').value;
 
-    // Show loading
+    // Validate 6-digit ID
+    if (!/^\d{6}$/.test(identifier)) {
+        showToast('Please enter a valid 6-digit ID.', 'error');
+        return;
+    }
+
     showLoading(true);
 
     try {
-        // Attempt login
-        const result = await authManager.signIn(identifier, password);
-
-        if (result.success) {
-            // Get user profile
-            const profile = await authManager.getUserProfile(result.user.uid);
-
-            if (!profile) {
-                showToast('User profile not found. Please contact administrator.', 'error');
-                await authManager.signOut();
+        // Try localStorage first (fallback)
+        const localUsers = localStorage.getItem('hostel_users');
+        if (localUsers) {
+            const users = JSON.parse(localUsers);
+            const user = users.find(u => u.registration_number === identifier);
+            
+            if (user && user.password === password) {
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                showToast('Login successful!', 'success');
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 1000);
                 return;
             }
-
-            showToast(`Welcome back, ${profile.full_name || profile.name || 'User'}!`, 'success');
-
-            // Redirect to appropriate dashboard after a short delay
-            setTimeout(() => {
-                redirectToDashboard();
-            }, 1500);
-
-        } else {
-            console.error('Login failed:', result.error);
-            showToast(result.error || 'Login failed. Please check your credentials.', 'error');
         }
+
+        // Try Firestore if available
+        if (window.firebaseDb && window.firebaseFunctions) {
+            const { collection, query, where, getDocs } = window.firebaseFunctions;
+            const usersRef = collection(window.firebaseDb, 'users');
+            const q = query(usersRef, where('registration_number', '==', identifier));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                const userDoc = querySnapshot.docs[0];
+                const userData = userDoc.data();
+
+                if (userData.password === password) {
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        uid: userDoc.id,
+                        ...userData
+                    }));
+                    showToast('Login successful!', 'success');
+                    setTimeout(() => {
+                        window.location.href = '../index.html';
+                    }, 1000);
+                    return;
+                }
+            }
+        }
+
+        showToast('Invalid ID or password.', 'error');
 
     } catch (error) {
         console.error('Login error:', error);
-        showToast('An error occurred during login. Please try again.', 'error');
+        showToast('Login failed. Please try again.', 'error');
     } finally {
         showLoading(false);
     }
@@ -70,29 +104,26 @@ async function handleLogin(event) {
 async function handleRegister(event) {
     event.preventDefault();
 
-    const name = document.getElementById('registerName').value;
-    const regNo = document.getElementById('registerRegNo').value;
-    const email = document.getElementById('registerEmail').value;
+    const name = document.getElementById('registerName').value.trim();
+    const regNo = document.getElementById('registerRegNo').value.trim();
+    const email = document.getElementById('registerEmail').value.trim();
     const gender = document.getElementById('registerGender').value;
-    const course = document.getElementById('registerCourse').value;
+    const course = document.getElementById('registerCourse').value.trim();
     const roleElement = document.querySelector('input[name="registerRole"]:checked');
     const role = roleElement ? roleElement.value : 'student';
     const password = document.getElementById('registerPassword').value;
     const confirmPassword = document.getElementById('registerConfirmPassword').value;
 
-    // Validate passwords match
     if (password !== confirmPassword) {
         showToast('Passwords do not match.', 'error');
         return;
     }
 
-    // Validate password strength
     if (password.length < 6) {
         showToast('Password must be at least 6 characters long.', 'error');
         return;
     }
 
-    // Validate 6-digit registration number
     if (!/^\d{6}$/.test(regNo)) {
         showToast('Registration number must be exactly 6 digits.', 'error');
         return;
@@ -117,10 +148,8 @@ async function handleRegister(event) {
         if (result.success) {
             showToast('Account created successfully! Please login with your 6-digit ID and password.', 'success');
 
-            // Redirect to login tab after 2 seconds
             setTimeout(() => {
                 switchTab('login');
-                // Pre-fill the registration number
                 document.getElementById('loginIdentifier').value = regNo;
             }, 2000);
 
@@ -129,27 +158,25 @@ async function handleRegister(event) {
         }
 
     } catch (error) {
-        console.error('Registration error in handleRegister:', error);
+        console.error('Registration error:', error);
         showToast('An error occurred during registration. Please try again.', 'error');
     } finally {
         showLoading(false);
     }
 }
 
-// Redirect to appropriate dashboard based on user role
+// Redirect to appropriate dashboard
 function redirectToDashboard() {
-    // Redirect to main application
     window.location.href = '../index.html';
 }
 
-// Show forgot password modal/form
+// Show forgot password
 function showForgotPassword() {
     showToast('Password reset functionality coming soon. Please contact administrator.', 'info');
 }
 
 // Form validation setup
 function setupFormValidation() {
-    // Real-time email validation
     const emailInputs = document.querySelectorAll('input[type="email"]');
     emailInputs.forEach(input => {
         input.addEventListener('blur', function() {
@@ -163,7 +190,6 @@ function setupFormValidation() {
         });
     });
 
-    // Password confirmation validation
     const confirmPassword = document.getElementById('registerConfirmPassword');
     if (confirmPassword) {
         confirmPassword.addEventListener('input', function() {
@@ -186,12 +212,10 @@ function isValidEmail(email) {
 }
 
 function showFieldError(input, message) {
-    hideFieldError(input); // Remove existing error
-
+    hideFieldError(input);
     const errorDiv = document.createElement('div');
     errorDiv.className = 'field-error';
     errorDiv.textContent = message;
-
     input.parentNode.appendChild(errorDiv);
 }
 
@@ -204,14 +228,15 @@ function hideFieldError(input) {
 
 function showLoading(show) {
     const overlay = document.getElementById('loadingOverlay');
-    if (show) {
-        overlay.style.display = 'flex';
-    } else {
-        overlay.style.display = 'none';
+    if (overlay) {
+        overlay.style.display = show ? 'flex' : 'none';
     }
 }
 
 function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.innerHTML = `
@@ -219,15 +244,14 @@ function showToast(message, type = 'info') {
         <span>${message}</span>
     `;
 
-    document.getElementById('toastContainer').appendChild(toast);
+    container.appendChild(toast);
 
     setTimeout(() => {
         toast.remove();
     }, 5000);
 }
 
-
-// Theme Toggle Functionality
+// Theme Toggle
 function toggleTheme() {
     const html = document.documentElement;
     const currentTheme = html.getAttribute('data-theme');
@@ -237,27 +261,7 @@ function toggleTheme() {
     localStorage.setItem('theme', newTheme);
     
     const themeIcon = document.getElementById('themeIcon');
-    const themeText = document.getElementById('themeText');
-    
-    if (newTheme === 'dark') {
-        themeIcon.className = 'fas fa-sun';
-        themeText.textContent = 'Light';
-    } else {
-        themeIcon.className = 'fas fa-moon';
-        themeText.textContent = 'Dark';
+    if (themeIcon) {
+        themeIcon.className = newTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
     }
 }
-
-// Load saved theme on page load
-document.addEventListener('DOMContentLoaded', function() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    
-    const themeIcon = document.getElementById('themeIcon');
-    const themeText = document.getElementById('themeText');
-    
-    if (savedTheme === 'dark') {
-        themeIcon.className = 'fas fa-sun';
-        themeText.textContent = 'Light';
-    }
-});

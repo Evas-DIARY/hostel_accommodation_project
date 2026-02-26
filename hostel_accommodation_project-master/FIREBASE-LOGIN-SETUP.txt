@@ -1,0 +1,70 @@
+🔥 FIREBASE LOGIN SETUP - QUICK FIX
+=====================================
+
+## AUTOMATIC SETUP (Recommended)
+
+1. **Refresh the login page** (Ctrl+F5 or Cmd+Shift+R)
+2. **Wait 2 seconds** - the page will auto-create test users
+3. **Check browser console** (F12) - you should see:
+   ✅ Created: student@au.edu (password: student123)
+   ✅ Created: warden@au.edu (password: warden123)
+
+4. **Login with these credentials:**
+   
+   STUDENT LOGIN:
+   - Email: student@au.edu  OR  6-digit ID: 123456
+   - Password: student123
+   
+   WARDEN LOGIN:
+   - Email: warden@au.edu  OR  6-digit ID: 999999
+   - Password: warden123
+
+## IF AUTO-SETUP FAILS
+
+Open browser console (F12) and run:
+```javascript
+setupFirebase()
+```
+
+## MANUAL REGISTRATION
+
+If you want to create your own account:
+1. Click "Register" tab
+2. Fill in:
+   - Full Name: Your Name
+   - Registration Number: Any 6 digits (e.g., 111111)
+   - Email: youremail@example.com
+   - Gender: Select one
+   - Course: Your program
+   - Password: At least 6 characters
+   - Confirm Password: Same as above
+3. Click "Create Account"
+4. Login with your credentials
+
+## TROUBLESHOOTING
+
+**Error: "Failed to load resource: 400"**
+- The test users are being created, wait for success message
+- Then try logging in
+
+**Error: "Email already in use"**
+- Good! The user exists. Just login with the credentials above
+
+**Error: "Client is offline"**
+- Disable ad blocker for localhost
+- Or use incognito mode
+
+**Still stuck?**
+- Clear browser cache (Ctrl+Shift+Delete)
+- Refresh page
+- Try the test credentials above
+
+## FIREBASE CONSOLE CHECK
+
+To verify users were created:
+1. Go to: https://console.firebase.google.com
+2. Select project: hostel-accommodation
+3. Click "Authentication" → "Users"
+4. You should see the test users listed
+
+=====================================

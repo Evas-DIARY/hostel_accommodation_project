@@ -13,6 +13,10 @@ class FirebaseService {
         await this.waitForFirebase();
         this.auth = window.firebaseAuth;
         this.db = window.firebaseDb;
+
+        // Enable offline persistence for Firestore
+        await this.enableOfflinePersistence();
+
         this.setupInactivityMonitor();
         this.setupSecurityHeaders();
     }
@@ -28,6 +32,22 @@ class FirebaseService {
             };
             check();
         });
+    }
+
+    async enableOfflinePersistence() {
+        try {
+            const { enableIndexedDbPersistence } = window.firebaseFunctions;
+            await enableIndexedDbPersistence(this.db);
+            console.log('Firebase persistence enabled.');
+        } catch (error) {
+            if (error.code === 'failed-precondition') {
+                console.warn('Firebase persistence failed: Multiple tabs open. Persistence can only be enabled in one tab at a time.');
+            } else if (error.code === 'unimplemented') {
+                console.warn('Firebase persistence failed: The current browser does not support all of the features required to enable persistence.');
+            } else {
+                console.error('Firebase persistence failed:', error);
+            }
+        }
     }
 
     // Security: Inactivity Monitor

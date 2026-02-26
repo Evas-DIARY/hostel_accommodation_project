@@ -14,17 +14,17 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, query, where, orderBy, onSnapshot, serverTimestamp, runTransaction } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, query, where, getDocs, orderBy, onSnapshot, serverTimestamp, runTransaction } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
         const firebaseConfig = {
-            apiKey: "AIzaSyCiQ6ACTlxFqLEuE74oSt0qa0Unt__k3MQ",
-            authDomain: "hostel-accommodation.firebaseapp.com",
-            projectId: "hostel-accommodation",
-            storageBucket: "hostel-accommodation.firebasestorage.app",
-            messagingSenderId: "555245765651",
-            appId: "1:555245765651:web:40021d66399e93c23e2be6",
-            measurementId: "G-HXP8PRJEV7"
-        };
+  apiKey: "AIzaSyCiQ6ACTlxFqLEuE74oSt0qa0Unt__k3MQ",
+  authDomain: "hostel-accommodation.firebaseapp.com",
+  projectId: "hostel-accommodation",
+  storageBucket: "hostel-accommodation.firebasestorage.app",
+  messagingSenderId: "555245765651",
+  appId: "1:555245765651:web:40021d66399e93c23e2be6",
+  measurementId: "G-HXP8PRJEV7"
+};
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -44,7 +44,8 @@
             addDoc, 
             updateDoc, 
             query, 
-            where, 
+            where,
+            getDocs,
             orderBy, 
             onSnapshot, 
             serverTimestamp,
@@ -82,10 +83,10 @@
 
                     <form onsubmit="handleLogin(event)">
                         <div class="form-group">
-                            <label class="form-label">6-Digit ID or Email</label>
+                            <label class="form-label">Student/Staff ID</label>
                             <div class="input-group">
                                 <i class="fas fa-id-card input-icon"></i>
-                                <input type="text" id="loginIdentifier" class="form-control" placeholder="Enter your 6-digit ID or email" required>
+                                <input type="text" id="loginIdentifier" class="form-control" placeholder="Enter your 6-digit ID" maxlength="6" pattern="[0-9]{6}" required>
                             </div>
                         </div>
 
@@ -259,5 +260,6 @@
 
     <script src="../scripts/auth.js"></script>
     <script src="../scripts/login.js"></script>
+    <script src="../scripts/firebase-test.js"></script>
 </body>
 </html>

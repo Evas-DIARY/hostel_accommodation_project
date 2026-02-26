@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Firestore Database</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #d32f2f; }
+        .step {
+            background: #fff3e0;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #ff9800;
+            border-radius: 4px;
+        }
+        .btn {
+            display: inline-block;
+            background: #d32f2f;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 18px;
+            margin: 20px 0;
+        }
+        .btn:hover {
+            background: #b71c1c;
+        }
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 Create Firestore Database</h1>
+        
+        <p>Your Firebase project <strong>"hostel-accommodation"</strong> exists, but you need to create the Firestore database inside it.</p>
+
+        <div class="step">
+            <strong>Step 1:</strong> Click the button below to open Firebase Console
+        </div>
+
+        <a href="https://console.firebase.google.com/project/hostel-accommodation/firestore" target="_blank" class="btn">
+            🚀 Open Firebase Console
+        </a>
+
+        <div class="step">
+            <strong>Step 2:</strong> Click <code>Create database</code> button
+        </div>
+
+        <div class="step">
+            <strong>Step 3:</strong> Select <code>Start in test mode</code> → Click <code>Next</code>
+        </div>
+
+        <div class="step">
+            <strong>Step 4:</strong> Choose location (e.g., <code>us-central</code>) → Click <code>Enable</code>
+        </div>
+
+        <div class="step">
+            <strong>Step 5:</strong> Wait 30-60 seconds for database creation
+        </div>
+
+        <div class="step">
+            <strong>Step 6:</strong> Come back here and refresh your login page!
+        </div>
+
+        <hr style="margin: 30px 0;">
+
+        <h3>✅ After Database is Created:</h3>
+        <ol>
+            <li>Refresh your login page</li>
+            <li>Wait 2 seconds for test users to be created</li>
+            <li>Login with:
+                <ul>
+                    <li>ID: <code>123456</code> / Password: <code>student123</code></li>
+                    <li>ID: <code>999999</code> / Password: <code>warden123</code></li>
+                </ul>
+            </li>
+        </ol>
+
+        <p style="color: #666; margin-top: 30px;">
+            <strong>Note:</strong> If you don't want to create Firestore now, the system will work with localStorage (temporary storage).
+        </p>
+    </div>
+
+    <script>
+        // Auto-open Firebase Console after 2 seconds
+        setTimeout(() => {
+            if (confirm('Open Firebase Console now to create Firestore database?')) {
+                window.open('https://console.firebase.google.com/project/hostel-accommodation/firestore', '_blank');
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

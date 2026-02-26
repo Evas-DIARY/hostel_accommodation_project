@@ -29,7 +29,10 @@ class AuthManager {
             onAuthStateChanged(window.firebaseAuth, (user) => {
                 if (user) {
                     this.user = user;
-                    this.onLogin(user);
+                    // Don't trigger onLogin if we're on the login page
+                    if (!window.location.pathname.includes('login.html')) {
+                        this.onLogin(user);
+                    }
                 } else {
                     this.user = null;
                     this.onLogout();
@@ -40,7 +43,9 @@ class AuthManager {
             const loggedInUser = localStorage.getItem('currentUser');
             if (loggedInUser) {
                 this.user = JSON.parse(loggedInUser);
-                this.onLogin(this.user);
+                if (!window.location.pathname.includes('login.html')) {
+                    this.onLogin(this.user);
+                }
             } else {
                 this.onLogout();
             }
@@ -182,27 +187,29 @@ class AuthManager {
     async getUserProfile(uid) {
         if (this.useFirebase) {
             try {
-                // Try to get profile from backend API first if available
-                if (typeof apiManager !== 'undefined') {
-                    try {
-                        // We use the token to identify the user, so /me is appropriate
-                        const response = await apiManager.get('/users/me');
-                        return response; // Assuming backend returns the user object directly or in a wrapper
-                    } catch (apiError) {
-                        console.warn('API profile fetch failed, falling back to direct Firestore', apiError);
-                    }
-                }
-                
-                // Fallback to direct Firestore if API fails or apiManager not ready
                 const { doc, getDoc } = window.firebaseFunctions;
                 const userDoc = await getDoc(doc(window.firebaseDb, 'users', uid));
                 if (userDoc.exists()) {
                     return userDoc.data();
                 }
-                return null;
+                // If no profile exists, return basic info from auth
+                return {
+                    uid: uid,
+                    email: this.user?.email || '',
+                    name: this.user?.email?.split('@')[0] || 'User',
+                    full_name: this.user?.email?.split('@')[0] || 'User',
+                    role: 'student'
+                };
             } catch (error) {
                 console.error('Error getting user profile:', error);
-                return null;
+                // Return basic info even if Firestore fails
+                return {
+                    uid: uid,
+                    email: this.user?.email || '',
+                    name: this.user?.email?.split('@')[0] || 'User',
+                    full_name: this.user?.email?.split('@')[0] || 'User',
+                    role: 'student'
+                };
             }
         } else {
             const users = this.getUsers();
@@ -221,6 +228,7 @@ class AuthManager {
         console.log('User logged in:', user);
 
         const profile = await this.getUserProfile(user.uid);
+        console.log('Profile loaded:', profile);
 
         // Wait for app to be available
         if (typeof window.app === 'undefined') {
@@ -238,23 +246,15 @@ class AuthManager {
             gender: profile?.gender || 'N/A'
         };
 
-        // If we're on the login page, redirect to main page
-        if (window.location.pathname.includes('login.html')) {
-            window.location.href = '../index.html';
-        } else if (typeof window.app !== 'undefined') {
-            // If app object exists, update UI
-            this.updateUIBasedOnRole(window.app.currentUser.role);
+        // Update UI
+        this.updateUIBasedOnRole(window.app.currentUser.role);
 
-            const userNameElement = document.querySelector('.user-name');
-            if (userNameElement) {
-                userNameElement.textContent = window.app.currentUser.name;
-            }
-
-            // Only load dashboard if we're not already loading it
-            if (!window.location.pathname.includes('index.html') || !window.app.currentUser) {
-                window.app.loadDashboard();
-            }
+        const userNameElement = document.querySelector('.user-name');
+        if (userNameElement) {
+            userNameElement.textContent = window.app.currentUser.name;
         }
+
+        window.app.loadDashboard();
     }
 
     onLogout() {
@@ -293,15 +293,16 @@ class AuthManager {
 
     getErrorMessage(errorCode) {
         const errorMessages = {
-            'auth/user-not-found': 'No account found with this email address.',
+            'auth/user-not-found': 'No account found. Please register first.',
             'auth/wrong-password': 'Incorrect password.',
+            'auth/invalid-credential': 'Invalid email or password. Please register if you don\'t have an account.',
+            'auth/invalid-email': 'Invalid email format.',
             'auth/email-already-in-use': 'An account with this email already exists.',
             'auth/weak-password': 'Password should be at least 6 characters.',
-            'auth/invalid-email': 'Please enter a valid email address.',
             'auth/network-request-failed': 'Network error. Please check your connection.',
             'auth/too-many-requests': 'Too many failed attempts. Please try again later.'
         };
-        return errorMessages[errorCode] || 'An error occurred. Please try again.';
+        return errorMessages[errorCode] || 'Login failed. Please register first or check your credentials.';
     }
 
     // JSON storage methods
