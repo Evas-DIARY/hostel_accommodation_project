@@ -54,12 +54,52 @@ class AuthManager {
 
     async signIn(identifier, password) {
         if (this.useFirebase) {
-            // Use email for Firebase
+            let email = identifier;
+            
+            // Check if identifier is a 6-digit ID number
+            if (/^\d{6}$/.test(identifier)) {
+                try {
+                    console.log('Firebase: Resolving ID to email for:', identifier);
+                    const { collection, query, where, getDocs } = window.firebaseFunctions;
+                    const usersRef = collection(window.firebaseDb, 'users');
+                    
+                    // Try string match first
+                    let q = query(usersRef, where('registration_number', '==', identifier));
+                    let querySnapshot = await getDocs(q);
+                    
+                    // If not found, try number match just in case Firestore stored it as a number
+                    if (querySnapshot.empty) {
+                        console.log('No string match found, trying numeric match...');
+                        q = query(usersRef, where('registration_number', '==', parseInt(identifier)));
+                        querySnapshot = await getDocs(q);
+                    }
+                    
+                    if (!querySnapshot.empty) {
+                        const userData = querySnapshot.docs[0].data();
+                        email = userData.email;
+                        console.log('Successfully resolved ID to email:', email);
+                    } else {
+                        console.warn('ID lookup failed: No user found with registration_number:', identifier);
+                        return { success: false, error: 'Registration number not found. Please register first.' };
+                    }
+                } catch (error) {
+                    console.error('Error during Firestore ID resolution:', error);
+                    // It might be a permission error - check if they have rules set up
+                    if (error.code === 'permission-denied' || error.message?.includes('permission')) {
+                        return { success: false, error: 'Access Denied: Please check your Firestore security rules (Cloud Firestore > Rules).' };
+                    }
+                    return { success: false, error: `Database error: ${error.message} (${error.code || 'unknown'})` };
+                }
+            }
+
+            // Continue with Firebase Auth
             try {
                 const { signInWithEmailAndPassword } = window.firebaseFunctions;
-                const result = await signInWithEmailAndPassword(window.firebaseAuth, identifier, password);
+                console.log('Authenticating with email:', email);
+                const result = await signInWithEmailAndPassword(window.firebaseAuth, email, password);
                 return { success: true, user: result.user };
             } catch (error) {
+                console.error('Auth error:', error.code, error.message);
                 return { success: false, error: this.getErrorMessage(error.code) };
             }
         } else {
@@ -300,9 +340,10 @@ class AuthManager {
             'auth/email-already-in-use': 'An account with this email already exists.',
             'auth/weak-password': 'Password should be at least 6 characters.',
             'auth/network-request-failed': 'Network error. Please check your connection.',
-            'auth/too-many-requests': 'Too many failed attempts. Please try again later.'
+            'auth/too-many-requests': 'Too many failed attempts. Please try again later.',
+            'auth/operation-not-allowed': 'Email/Password login is not enabled in Firebase Console.'
         };
-        return errorMessages[errorCode] || 'Login failed. Please register first or check your credentials.';
+        return errorMessages[errorCode] || `Login failed: ${errorCode}. Please register first or check your credentials.`;
     }
 
     // JSON storage methods

@@ -40,61 +40,27 @@ async function handleLogin(event) {
     const identifier = document.getElementById('loginIdentifier').value.trim();
     const password = document.getElementById('loginPassword').value;
 
-    // Validate 6-digit ID
-    if (!/^\d{6}$/.test(identifier)) {
-        showToast('Please enter a valid 6-digit ID.', 'error');
+    if (!identifier || !password) {
+        showToast('Please enter your email/ID and password.', 'error');
         return;
     }
 
     showLoading(true);
 
     try {
-        // Try localStorage first (fallback)
-        const localUsers = localStorage.getItem('hostel_users');
-        if (localUsers) {
-            const users = JSON.parse(localUsers);
-            const user = users.find(u => u.registration_number === identifier);
-            
-            if (user && user.password === password) {
-                localStorage.setItem('currentUser', JSON.stringify(user));
-                showToast('Login successful!', 'success');
-                setTimeout(() => {
-                    window.location.href = '../index.html';
-                }, 1000);
-                return;
-            }
+        const result = await authManager.signIn(identifier, password);
+        
+        if (result.success) {
+            showToast('Login successful! Redirecting...', 'success');
+            setTimeout(() => {
+                window.location.href = '../index.html';
+            }, 1000);
+        } else {
+            showToast(result.error || 'Login failed. Please check your credentials.', 'error');
         }
-
-        // Try Firestore if available
-        if (window.firebaseDb && window.firebaseFunctions) {
-            const { collection, query, where, getDocs } = window.firebaseFunctions;
-            const usersRef = collection(window.firebaseDb, 'users');
-            const q = query(usersRef, where('registration_number', '==', identifier));
-            const querySnapshot = await getDocs(q);
-
-            if (!querySnapshot.empty) {
-                const userDoc = querySnapshot.docs[0];
-                const userData = userDoc.data();
-
-                if (userData.password === password) {
-                    localStorage.setItem('currentUser', JSON.stringify({
-                        uid: userDoc.id,
-                        ...userData
-                    }));
-                    showToast('Login successful!', 'success');
-                    setTimeout(() => {
-                        window.location.href = '../index.html';
-                    }, 1000);
-                    return;
-                }
-            }
-        }
-
-        showToast('Invalid ID or password.', 'error');
-
     } catch (error) {
         console.error('Login error:', error);
-        showToast('Login failed. Please try again.', 'error');
+        showToast('An error occurred during login. Please try again.', 'error');
     } finally {
         showLoading(false);
     }
@@ -177,7 +143,21 @@ function showForgotPassword() {
 
 // Form validation setup
 function setupFormValidation() {
-    const emailInputs = document.querySelectorAll('input[type="email"]');
+    const identifierInput = document.getElementById('loginIdentifier');
+    if (identifierInput) {
+        identifierInput.addEventListener('blur', function() {
+            const val = this.value.trim();
+            if (val && !isValidEmail(val) && !/^\d{6}$/.test(val)) {
+                this.classList.add('error');
+                showFieldError(this, 'Please enter a valid email address or 6-digit ID');
+            } else {
+                this.classList.remove('error');
+                hideFieldError(this);
+            }
+        });
+    }
+
+    const emailInputs = document.querySelectorAll('#registerEmail');
     emailInputs.forEach(input => {
         input.addEventListener('blur', function() {
             if (this.value && !isValidEmail(this.value)) {

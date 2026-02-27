@@ -177,14 +177,14 @@ class HostelApp {
                      if (appStatusContainer) {
                          if (applications.length > 0) {
                              const latestApp = applications[0]; // Assuming sorted or just taking latest
-                             appStatusContainer.innerHTML = \`
-                                <p>Latest Application Status: <strong class="\${latestApp.status === 'approved' ? 'text-green' : 'text-orange'}">\${latestApp.status.toUpperCase()}</strong></p>
-                                <button class="btn btn-outline mt-2 futuristic" onclick="app.viewApplicationDetails('\${latestApp.id}')">
+                             appStatusContainer.innerHTML = `
+                                <p>Latest Application Status: <strong class="${latestApp.status === 'approved' ? 'text-green' : 'text-orange'}">${latestApp.status.toUpperCase()}</strong></p>
+                                <button class="btn btn-outline mt-2 futuristic" onclick="app.viewApplicationDetails('${latestApp.id}')">
                                     View Details <i class="fas fa-arrow-right"></i>
                                 </button>
-                             \`;
+                             `;
                          } else {
-                              appStatusContainer.innerHTML = \`<p>No applications found.</p>\`;
+                              appStatusContainer.innerHTML = `<p>No applications found.</p>`;
                          }
                      }
                  });
@@ -194,29 +194,29 @@ class HostelApp {
                      if (roomStatusContainer) {
                          if (allocations.length > 0) {
                              const allocation = allocations[0];
-                             roomStatusContainer.innerHTML = \`
+                             roomStatusContainer.innerHTML = `
                                 <div class="room-info" style="color: var(--text-primary); font-size: 1.1rem; margin-bottom: 1rem;">
-                                    <p><strong>Room:</strong> <span style="color: var(--neon-blue); text-shadow: var(--shadow-neon);">\${allocation.roomId || 'Assigned'}</span></p>
-                                    <p><strong>Hostel:</strong> \${allocation.hostelBlock || 'Standard Block'}</p>
+                                    <p><strong>Room:</strong> <span style="color: var(--neon-blue); text-shadow: var(--shadow-neon);">${allocation.roomId || 'Assigned'}</span></p>
+                                    <p><strong>Hostel:</strong> ${allocation.hostelBlock || 'Standard Block'}</p>
                                 </div>
                                 <button class="btn btn-info mt-2 futuristic pulse-neon" onclick="app.viewRoomDetails()">
                                     <i class="fas fa-eye"></i> View Room Details
                                 </button>
-                             \`;
-                             document.getElementById('room-status-badge').innerHTML = \`<i class="fas fa-check"></i> Allocated\`;
+                             `;
+                             document.getElementById('room-status-badge').innerHTML = `<i class="fas fa-check"></i> Allocated`;
                          } else {
-                              roomStatusContainer.innerHTML = \`<p>You have not been allocated a room yet.</p>\`;
-                              document.getElementById('room-status-badge').innerHTML = \`<i class="fas fa-clock"></i> Pending\`;
+                              roomStatusContainer.innerHTML = `<p>You have not been allocated a room yet.</p>`;
+                              document.getElementById('room-status-badge').innerHTML = `<i class="fas fa-clock"></i> Pending`;
                          }
                      }
                  });
              }, 500);
         }
 
-        return \`
+        return `
             <div class="dashboard-header futuristic fade-in" style="padding: 2rem; border-radius: 16px; margin-bottom: 2rem;">
-                <h1 style="color: var(--text-primary); text-shadow: var(--shadow-neon);">Welcome back, \${userName}!</h1>
-                <p style="font-style:italic;color:var(--text-secondary);margin-top:0.5rem">"\${randomQuote}"</p>
+                <h1 style="color: var(--text-primary); text-shadow: var(--shadow-neon);">Welcome back, ${userName}!</h1>
+                <p style="font-style:italic;color:var(--text-secondary);margin-top:0.5rem">"${randomQuote}"</p>
             </div>
 
             <!-- Profile Section -->
@@ -226,10 +226,10 @@ class HostelApp {
                         <img src="assets/images/logo.png" alt="Profile" id="profileImage">
                     </div>
                     <div class="profile-info">
-                        <h2 style="color: var(--neon-blue);">\${userName}</h2>
-                        <p><i class="fas fa-id-card"></i> ID: \${userId || 'N/A'}</p>
-                        <p><i class="fas fa-envelope"></i> \${this.currentUser?.email || 'email@au.edu'}</p>
-                        <p><i class="fas fa-graduation-cap"></i> \${this.currentUser?.program || 'Program'}</p>
+                        <h2 style="color: var(--neon-blue);">${userName}</h2>
+                        <p><i class="fas fa-id-card"></i> ID: ${userId || 'N/A'}</p>
+                        <p><i class="fas fa-envelope"></i> ${this.currentUser?.email || 'email@au.edu'}</p>
+                        <p><i class="fas fa-graduation-cap"></i> ${this.currentUser?.program || 'Program'}</p>
                     </div>
                 </div>
             </div>
@@ -275,7 +275,7 @@ class HostelApp {
                     </div>
                 </div>
             </div>
-        \`;
+        `;
     }
 
     async loadWardenDashboard() {
@@ -287,30 +287,30 @@ class HostelApp {
                      const countContainer = document.getElementById('warden-pending-count');
                      
                      if (listContainer && countContainer) {
-                         countContainer.innerHTML = \`<i class="fas fa-clock"></i> \${applications.length} Pending\`;
+                         countContainer.innerHTML = `<i class="fas fa-clock"></i> ${applications.length} Pending`;
                          
                          if (applications.length > 0) {
-                             listContainer.innerHTML = applications.map(app => \`
+                             listContainer.innerHTML = applications.map(app => `
                                 <div class="application-item" style="padding: 1rem; border-bottom: 1px solid var(--border-color); background: var(--bg-primary); border-radius: 8px; margin-bottom: 0.5rem;">
-                                    <p><strong>\${app.studentName || 'Student'}</strong></p>
-                                    <p style="font-size: 0.9rem; color: var(--text-secondary);">Applied: \${app.submittedAt ? new Date(app.submittedAt.toDate()).toLocaleDateString() : 'Recently'}</p>
+                                    <p><strong>${app.studentName || 'Student'}</strong></p>
+                                    <p style="font-size: 0.9rem; color: var(--text-secondary);">Applied: ${app.submittedAt ? new Date(app.submittedAt.toDate()).toLocaleDateString() : 'Recently'}</p>
                                     <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
-                                        <button class="btn btn-success btn-sm futuristic pulse-neon" style="background: var(--accent-green); color: white; border:none;" onclick="app.approveApplication('\${app.id}')">Approve</button>
-                                        <button class="btn btn-danger btn-sm futuristic" style="background: var(--primary-red); color: white; border:none;" onclick="app.rejectApplication('\${app.id}')">Reject</button>
+                                        <button class="btn btn-success btn-sm futuristic pulse-neon" style="background: var(--accent-green); color: white; border:none;" onclick="app.approveApplication('${app.id}')">Approve</button>
+                                        <button class="btn btn-danger btn-sm futuristic" style="background: var(--primary-red); color: white; border:none;" onclick="app.rejectApplication('${app.id}')">Reject</button>
                                     </div>
                                 </div>
-                             \`).join('');
+                             `).join('');
                          } else {
-                             listContainer.innerHTML = \`<p style="color: var(--text-secondary); text-align: center; padding: 1rem;">No pending applications.</p>\`;
+                             listContainer.innerHTML = `<p style="color: var(--text-secondary); text-align: center; padding: 1rem;">No pending applications.</p>`;
                          }
                      }
                  });
              }, 500);
         }
 
-        return \`
+        return `
             <div class="dashboard-header futuristic fade-in" style="padding: 2rem; border-radius: 16px; margin-bottom: 2rem;">
-                <h1 style="color: var(--text-primary); text-shadow: var(--shadow-neon);">Warden Dashboard - <span style="color: var(--neon-purple);">\${this.currentUser?.name || 'Warden'}</span></h1>
+                <h1 style="color: var(--text-primary); text-shadow: var(--shadow-neon);">Warden Dashboard - <span style="color: var(--neon-purple);">${this.currentUser?.name || 'Warden'}</span></h1>
                 <p style="color: var(--text-secondary);">Manage hostel accommodations, review applications, and allocate rooms in real-time</p>
             </div>
 
@@ -352,7 +352,7 @@ class HostelApp {
                     </div>
                 </div>
             </div>
-        \`;
+        `;
     }
 
     async loadApplicationForm() {
