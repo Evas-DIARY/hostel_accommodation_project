@@ -166,296 +166,193 @@ class HostelApp {
         ];
         const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
         const userName = this.currentUser?.name || this.currentUser?.full_name || 'Student';
+        const userId = this.currentUser?.id || this.currentUser?.registration_number;
         
-        return `
-            <div class="dashboard-header fade-in">
-                <h1>Welcome back, ${userName}!</h1>
-                <p style="font-style:italic;color:var(--text-secondary);margin-top:0.5rem">"${randomQuote}"</p>
-            </div>
+        // Start listening to applications and allocations if Firebase is enabled
+        if (window.firebaseService && typeof window.firebaseAuth !== 'undefined') {
+             // We setup listeners and update the DOM directly when data changes
+             setTimeout(() => {
+                 window.firebaseService.listenToApplications(userId, (applications) => {
+                     const appStatusContainer = document.getElementById('dashboard-app-status-inner');
+                     if (appStatusContainer) {
+                         if (applications.length > 0) {
+                             const latestApp = applications[0]; // Assuming sorted or just taking latest
+                             appStatusContainer.innerHTML = \`
+                                <p>Latest Application Status: <strong class="\${latestApp.status === 'approved' ? 'text-green' : 'text-orange'}">\${latestApp.status.toUpperCase()}</strong></p>
+                                <button class="btn btn-outline mt-2 futuristic" onclick="app.viewApplicationDetails('\${latestApp.id}')">
+                                    View Details <i class="fas fa-arrow-right"></i>
+                                </button>
+                             \`;
+                         } else {
+                              appStatusContainer.innerHTML = \`<p>No applications found.</p>\`;
+                         }
+                     }
+                 });
 
-            <!-- Image Slider -->
-            <div class="image-slider fade-in">
-                <div class="slider-container">
-                    <div class="slider-track" id="sliderTrack">
-                        <div class="slide">
-                            <img src="assets/images/1.jpg" alt="Hostel View 1">
-                            <div class="slide-overlay">
-                                <h3>Welcome, ${userName}!</h3>
-                                <p>Experience comfortable living in our state-of-the-art hostels</p>
-                            </div>
-                        </div>
-                        <div class="slide">
-                            <img src="assets/images/2.jpg" alt="Hostel View 2">
-                            <div class="slide-overlay">
-                                <h3>Study Spaces for ${userName}</h3>
-                                <p>Dedicated areas for focused academic work</p>
-                            </div>
-                        </div>
-                        <div class="slide">
-                            <img src="assets/images/3.jpg" alt="Hostel View 3">
-                            <div class="slide-overlay">
-                                <h3>Recreation Facilities</h3>
-                                <p>Relax and unwind in our common areas</p>
-                            </div>
-                        </div>
-                        <div class="slide">
-                            <img src="assets/images/4.jpg" alt="Hostel View 4">
-                            <div class="slide-overlay">
-                                <h3>Safe Environment</h3>
-                                <p>24/7 security for your peace of mind</p>
-                            </div>
-                        </div>
-                    </div>
-                    <button class="slider-arrow prev" onclick="app.prevSlide()">‹</button>
-                    <button class="slider-arrow next" onclick="app.nextSlide()">›</button>
-                    <div class="slider-nav" id="sliderNav"></div>
-                </div>
+                 window.firebaseService.listenToRoomAllocation(userId, (allocations) => {
+                     const roomStatusContainer = document.getElementById('dashboard-room-status-inner');
+                     if (roomStatusContainer) {
+                         if (allocations.length > 0) {
+                             const allocation = allocations[0];
+                             roomStatusContainer.innerHTML = \`
+                                <div class="room-info" style="color: var(--text-primary); font-size: 1.1rem; margin-bottom: 1rem;">
+                                    <p><strong>Room:</strong> <span style="color: var(--neon-blue); text-shadow: var(--shadow-neon);">\${allocation.roomId || 'Assigned'}</span></p>
+                                    <p><strong>Hostel:</strong> \${allocation.hostelBlock || 'Standard Block'}</p>
+                                </div>
+                                <button class="btn btn-info mt-2 futuristic pulse-neon" onclick="app.viewRoomDetails()">
+                                    <i class="fas fa-eye"></i> View Room Details
+                                </button>
+                             \`;
+                             document.getElementById('room-status-badge').innerHTML = \`<i class="fas fa-check"></i> Allocated\`;
+                         } else {
+                              roomStatusContainer.innerHTML = \`<p>You have not been allocated a room yet.</p>\`;
+                              document.getElementById('room-status-badge').innerHTML = \`<i class="fas fa-clock"></i> Pending\`;
+                         }
+                     }
+                 });
+             }, 500);
+        }
+
+        return \`
+            <div class="dashboard-header futuristic fade-in" style="padding: 2rem; border-radius: 16px; margin-bottom: 2rem;">
+                <h1 style="color: var(--text-primary); text-shadow: var(--shadow-neon);">Welcome back, \${userName}!</h1>
+                <p style="font-style:italic;color:var(--text-secondary);margin-top:0.5rem">"\${randomQuote}"</p>
             </div>
 
             <!-- Profile Section -->
-            <div class="profile-section fade-in" style="animation-delay: 0.1s">
+            <div class="profile-section fade-in glass-panel" style="animation-delay: 0.1s; margin-bottom: 2rem; padding: 2rem;">
                 <div class="profile-header">
-                    <div class="profile-avatar">
+                    <div class="profile-avatar" style="box-shadow: var(--shadow-neon); border-radius: 50%;">
                         <img src="assets/images/logo.png" alt="Profile" id="profileImage">
-                        <label class="avatar-upload" title="Change profile picture">
-                            <i class="fas fa-camera"></i>
-                            <input type="file" accept="image/*" onchange="app.updateProfilePicture(event)">
-                        </label>
                     </div>
                     <div class="profile-info">
-                        <h2>${userName}</h2>
-                        <p><i class="fas fa-id-card"></i> ID: ${this.currentUser?.id || this.currentUser?.registration_number || 'N/A'}</p>
-                        <p><i class="fas fa-envelope"></i> ${this.currentUser?.email || 'email@au.edu'}</p>
-                        <p><i class="fas fa-graduation-cap"></i> ${this.currentUser?.program || 'Program'}</p>
-                        <button class="btn btn-outline mt-2" onclick="app.editProfile()">
-                            <i class="fas fa-edit"></i> Edit Profile
-                        </button>
-                    </div>
-                    <div class="notification-bell" onclick="app.toggleNotifications()">
-                        <i class="fas fa-bell"></i>
-                        <span class="notification-count" id="notificationCount">3</span>
-                        <div class="notification-dropdown" id="notificationDropdown">
-                            <div class="notification-header">
-                                <h4>Notifications</h4>
-                                <a href="#" class="mark-all-read" onclick="app.markAllRead(event)">Mark all read</a>
-                            </div>
-                            <div class="notification-list">
-                                <div class="notification-item unread" style="display: flex; align-items: flex-start;">
-                                    <div class="notification-icon">
-                                        <i class="fas fa-check-circle" style="color: var(--accent-green);"></i>
-                                    </div>
-                                    <div class="notification-content">
-                                        <div class="notification-title">Application Approved</div>
-                                        <div class="notification-text">Your accommodation application has been approved!</div>
-                                        <div class="notification-time">2 hours ago</div>
-                                    </div>
-                                </div>
-                                <div class="notification-item unread" style="display: flex; align-items: flex-start;">
-                                    <div class="notification-icon">
-                                        <i class="fas fa-home" style="color: var(--accent-blue);"></i>
-                                    </div>
-                                    <div class="notification-content">
-                                        <div class="notification-title">Room Allocated</div>
-                                        <div class="notification-text">You've been assigned to Room A-101</div>
-                                        <div class="notification-time">5 hours ago</div>
-                                    </div>
-                                </div>
-                                <div class="notification-item" style="display: flex; align-items: flex-start;">
-                                    <div class="notification-icon">
-                                        <i class="fas fa-info-circle" style="color: var(--accent-orange);"></i>
-                                    </div>
-                                    <div class="notification-content">
-                                        <div class="notification-title">Deadline Reminder</div>
-                                        <div class="notification-text">Application deadline: Dec 15, 2024</div>
-                                        <div class="notification-time">1 day ago</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="profile-stats">
-                    <div class="stat-box">
-                        <span class="stat-value">1</span>
-                        <span class="stat-label">Active Application</span>
-                    </div>
-                    <div class="stat-box">
-                        <span class="stat-value">A-101</span>
-                        <span class="stat-label">Room Number</span>
-                    </div>
-                    <div class="stat-box">
-                        <span class="stat-value">Approved</span>
-                        <span class="stat-label">Status</span>
-                    </div>
-                    <div class="stat-box">
-                        <span class="stat-value">2026S1</span>
-                        <span class="stat-label">Semester</span>
+                        <h2 style="color: var(--neon-blue);">\${userName}</h2>
+                        <p><i class="fas fa-id-card"></i> ID: \${userId || 'N/A'}</p>
+                        <p><i class="fas fa-envelope"></i> \${this.currentUser?.email || 'email@au.edu'}</p>
+                        <p><i class="fas fa-graduation-cap"></i> \${this.currentUser?.program || 'Program'}</p>
                     </div>
                 </div>
             </div>
 
             <div class="dashboard-grid">
                 <!-- Application Status -->
-                <div class="card fade-in" style="animation-delay: 0.2s">
+                <div class="card fade-in glass-panel" style="animation-delay: 0.2s">
                     <div class="card-header">
-                        <h3><i class="fas fa-clipboard-check"></i> Application Status</h3>
-                        <span class="status-badge status-approved">
-                            <i class="fas fa-check"></i> Approved
-                        </span>
+                        <h3 style="color: var(--text-primary);"><i class="fas fa-clipboard-check" style="color: var(--neon-purple);"></i> Application Status</h3>
                     </div>
-                    <p>Your application has been approved by the warden.</p>
-                    <button class="btn btn-outline mt-2" onclick="app.viewApplicationDetails()">
-                        View Details <i class="fas fa-arrow-right"></i>
-                    </button>
+                    <div id="dashboard-app-status-inner">
+                        <div class="spinner" style="width: 20px; height: 20px;"></div> Loading...
+                    </div>
                 </div>
 
-                <!-- My Room -->
-                <div class="card fade-in" style="animation-delay: 0.3s">
+                <!-- My Room / Real-Time allocation injected here -->
+                <div class="card fade-in glass-panel" style="animation-delay: 0.3s">
                     <div class="card-header">
-                        <h3><i class="fas fa-home"></i> My Room</h3>
-                        <span class="status-badge status-approved">
-                            <i class="fas fa-check"></i> Allocated
+                        <h3 style="color: var(--text-primary);"><i class="fas fa-home" style="color: var(--neon-blue);"></i> My Room</h3>
+                        <span id="room-status-badge" class="status-badge status-approved" style="color: var(--neon-blue); border-color: var(--neon-blue);">
+                            <i class="fas fa-spinner fa-spin"></i> Checking
                         </span>
                     </div>
-                    <div class="room-info">
-                        <p><strong>Room:</strong> A-101</p>
-                        <p><strong>Hostel:</strong> Hostel A</p>
-                        <p><strong>Capacity:</strong> 4 students</p>
-                        <p><strong>Occupied:</strong> 3 students</p>
+                    <div id="dashboard-room-status-inner">
+                        <div class="spinner" style="width: 20px; height: 20px;"></div> Loading room data...
                     </div>
-                    <button class="btn btn-info mt-2" onclick="app.viewRoomDetails()">
-                        <i class="fas fa-eye"></i> View Room Details
-                    </button>
                 </div>
 
                 <!-- Quick Actions -->
-                <div class="card fade-in" style="animation-delay: 0.4s">
+                <div class="card fade-in glass-panel" style="animation-delay: 0.4s">
                     <div class="card-header">
-                        <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+                        <h3 style="color: var(--text-primary);"><i class="fas fa-bolt" style="color: var(--primary-red); text-shadow: 0 0 10px rgba(211,47,47,0.5);"></i> Quick Actions</h3>
                     </div>
                     <div class="action-grid">
-                        <button class="action-btn" onclick="app.loadPage('apply')">
-                            <i class="fas fa-edit"></i>
-                            <span>Apply Now</span>
+                        <button class="action-btn futuristic glass-panel" onclick="app.loadPage('apply')">
+                            <i class="fas fa-edit" style="color: var(--neon-purple);"></i>
+                            <span style="color: var(--text-primary);">Apply Now</span>
                         </button>
-                        <button class="action-btn" onclick="app.loadPage('status')">
-                            <i class="fas fa-history"></i>
-                            <span>Check Status</span>
-                        </button>
-                        <button class="action-btn" onclick="app.loadPage('rooms')">
-                            <i class="fas fa-bed"></i>
-                            <span>View Rooms</span>
-                        </button>
-                        <button class="action-btn" onclick="app.contactWarden()">
-                            <i class="fas fa-headset"></i>
-                            <span>Contact Warden</span>
+                        <button class="action-btn futuristic glass-panel" onclick="app.loadPage('status')">
+                            <i class="fas fa-history" style="color: var(--neon-blue);"></i>
+                            <span style="color: var(--text-primary);">Check Status</span>
                         </button>
                     </div>
                 </div>
             </div>
-        `;
+        \`;
     }
 
     async loadWardenDashboard() {
-        return `
-            <div class="dashboard-header fade-in">
-                <h1>Warden Dashboard - ${this.currentUser?.name || 'Warden'}</h1>
-                <p>Manage hostel accommodations, review applications, and allocate rooms</p>
+        // Start listening to pending applications if Firebase is enabled
+        if (window.firebaseService && typeof window.firebaseAuth !== 'undefined') {
+             setTimeout(() => {
+                 window.firebaseService.listenToPendingApplications((applications) => {
+                     const listContainer = document.getElementById('warden-pending-apps-list');
+                     const countContainer = document.getElementById('warden-pending-count');
+                     
+                     if (listContainer && countContainer) {
+                         countContainer.innerHTML = \`<i class="fas fa-clock"></i> \${applications.length} Pending\`;
+                         
+                         if (applications.length > 0) {
+                             listContainer.innerHTML = applications.map(app => \`
+                                <div class="application-item" style="padding: 1rem; border-bottom: 1px solid var(--border-color); background: var(--bg-primary); border-radius: 8px; margin-bottom: 0.5rem;">
+                                    <p><strong>\${app.studentName || 'Student'}</strong></p>
+                                    <p style="font-size: 0.9rem; color: var(--text-secondary);">Applied: \${app.submittedAt ? new Date(app.submittedAt.toDate()).toLocaleDateString() : 'Recently'}</p>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <button class="btn btn-success btn-sm futuristic pulse-neon" style="background: var(--accent-green); color: white; border:none;" onclick="app.approveApplication('\${app.id}')">Approve</button>
+                                        <button class="btn btn-danger btn-sm futuristic" style="background: var(--primary-red); color: white; border:none;" onclick="app.rejectApplication('\${app.id}')">Reject</button>
+                                    </div>
+                                </div>
+                             \`).join('');
+                         } else {
+                             listContainer.innerHTML = \`<p style="color: var(--text-secondary); text-align: center; padding: 1rem;">No pending applications.</p>\`;
+                         }
+                     }
+                 });
+             }, 500);
+        }
+
+        return \`
+            <div class="dashboard-header futuristic fade-in" style="padding: 2rem; border-radius: 16px; margin-bottom: 2rem;">
+                <h1 style="color: var(--text-primary); text-shadow: var(--shadow-neon);">Warden Dashboard - <span style="color: var(--neon-purple);">\${this.currentUser?.name || 'Warden'}</span></h1>
+                <p style="color: var(--text-secondary);">Manage hostel accommodations, review applications, and allocate rooms in real-time</p>
             </div>
 
             <div class="dashboard-grid">
                 <!-- Pending Applications -->
-                <div class="card fade-in" style="animation-delay: 0.1s">
+                <div class="card fade-in glass-panel" style="animation-delay: 0.1s">
                     <div class="card-header">
-                        <h3><i class="fas fa-clipboard-list"></i> Pending Applications</h3>
-                        <span class="status-badge status-pending">
-                            <i class="fas fa-clock"></i> 12 Pending
+                        <h3 style="color: var(--text-primary);"><i class="fas fa-clipboard-list" style="color: var(--neon-blue);"></i> Pending Applications</h3>
+                        <span id="warden-pending-count" class="status-badge status-pending" style="color: var(--accent-orange); border-color: var(--accent-orange);">
+                            <i class="fas fa-spinner fa-spin"></i> Loading...
                         </span>
                     </div>
-                    <div class="application-list">
-                        <div class="application-item" style="padding: 0.75rem; border-bottom: 1px solid var(--secondary-gray);">
-                            <p><strong>John Doe</strong> - Male - BSc AI</p>
-                            <p style="font-size: 0.9rem; color: var(--text-secondary);">Applied: 2 days ago</p>
-                            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
-                                <button class="btn btn-success btn-sm" onclick="app.approveApplication('john-doe')">Approve</button>
-                                <button class="btn btn-danger btn-sm" onclick="app.rejectApplication('john-doe')">Reject</button>
-                            </div>
-                        </div>
-                        <div class="application-item" style="padding: 0.75rem; border-bottom: 1px solid var(--secondary-gray);">
-                            <p><strong>Jane Smith</strong> - Female - BSc CS</p>
-                            <p style="font-size: 0.9rem; color: var(--text-secondary);">Applied: 3 days ago</p>
-                            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
-                                <button class="btn btn-success btn-sm" onclick="app.approveApplication('jane-smith')">Approve</button>
-                                <button class="btn btn-danger btn-sm" onclick="app.rejectApplication('jane-smith')">Reject</button>
-                            </div>
-                        </div>
+                    <div id="warden-pending-apps-list" class="application-list" style="max-height: 300px; overflow-y: auto; padding-right: 0.5rem;">
+                        <div class="spinner" style="margin: 2rem auto;"></div>
                     </div>
-                    <button class="btn btn-primary mt-2" onclick="app.loadPage('applications')" style="width: 100%; margin-top: 1rem;">
+                    <button class="btn btn-primary futuristic mt-2" onclick="app.loadPage('applications')" style="width: 100%; margin-top: 1rem;">
                         View All Applications <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>
 
                 <!-- Room Allocation -->
-                <div class="card fade-in" style="animation-delay: 0.2s">
+                <div class="card fade-in glass-panel" style="animation-delay: 0.2s">
                     <div class="card-header">
-                        <h3><i class="fas fa-bed"></i> Room Allocation</h3>
+                        <h3 style="color: var(--text-primary);"><i class="fas fa-bed" style="color: var(--neon-purple);"></i> Room Allocation</h3>
                     </div>
-                    <p>Allocate approved students to available rooms</p>
-                    <div class="stats-grid" style="margin-top: 1rem;">
-                        <div class="stat-item">
-                            <div class="stat-number">65</div>
-                            <div class="stat-label">Available Beds</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-number">180</div>
-                            <div class="stat-label">Allocated</div>
-                        </div>
-                    </div>
-                    <button class="btn btn-primary mt-2" onclick="app.loadPage('allocation')" style="width: 100%; margin-top: 1rem;">
-                        <i class="fas fa-plus"></i> Allocate Rooms
+                    <p style="color: var(--text-secondary);">Allocate approved students to available rooms dynamically</p>
+                    <button class="btn btn-primary futuristic pulse-neon mt-2" onclick="app.loadPage('allocation')" style="width: 100%; margin-top: 1rem;">
+                        <i class="fas fa-plus"></i> Open Allocation Interface
                     </button>
                 </div>
-
-                <!-- Hostel Overview -->
-                <div class="card fade-in" style="animation-delay: 0.3s">
+                
+                <!-- Quick Stats Placeholder -->
+                <div class="card fade-in glass-panel" style="animation-delay: 0.3s">
                     <div class="card-header">
-                        <h3><i class="fas fa-building"></i> Hostel Overview</h3>
+                        <h3 style="color: var(--text-primary);"><i class="fas fa-chart-bar" style="color: var(--neon-blue);"></i> Statistics</h3>
                     </div>
-                    <div class="hostel-blocks">
-                        <p><strong>Girls Hostels (A-H Block):</strong> 120 students</p>
-                        <p><strong>Boys Hostels (I-L Block):</strong> 125 students</p>
-                    </div>
-                    <button class="btn btn-info mt-2" onclick="app.loadPage('rooms')" style="width: 100%; margin-top: 1rem;">
-                        <i class="fas fa-eye"></i> View All Rooms
-                    </button>
-                </div>
-
-                <!-- Quick Stats -->
-                <div class="card fade-in" style="animation-delay: 0.4s">
-                    <div class="card-header">
-                        <h3><i class="fas fa-chart-bar"></i> Statistics</h3>
-                    </div>
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <div class="stat-number">245</div>
-                            <div class="stat-label">Total Students</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-number">12</div>
-                            <div class="stat-label">Pending</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-number">28</div>
-                            <div class="stat-label">Approved</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-number">5</div>
-                            <div class="stat-label">Rejected</div>
-                        </div>
+                    <div style="font-style: italic; color: var(--text-secondary); padding: 1rem; text-align: center;">
+                       Live analytics connected to Firestore coming soon...
                     </div>
                 </div>
             </div>
-        `;
+        \`;
     }
 
     async loadApplicationForm() {

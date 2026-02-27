@@ -6,6 +6,7 @@
     <title>Login - AU Hostel Accommodation System</title>
     <link rel="icon" type="image/png" href="../assets/images/logo.png">
     <link rel="stylesheet" href="../styles/main.css">
+    <link rel="stylesheet" href="../styles/futuristic.css">
     <link rel="stylesheet" href="../styles/responsive.css">
     <link rel="stylesheet" href="../styles/utilities.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -55,8 +56,8 @@
 </head>
 <body>
     <div class="login-page">
-        <div class="theme-toggle-login" onclick="toggleTheme()">
-            <i class="fas fa-moon" id="themeIcon"></i>
+        <div class="theme-toggle-login" onclick="toggleTheme()" style="background: var(--glass-bg); padding: 0.5rem; border-radius: 50%; border: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-moon" id="themeIcon" style="color: var(--neon-blue);"></i>
         </div>
         
         <div class="login-container">
@@ -68,17 +69,17 @@
                 </div>
             </div>
 
-            <div class="login-card">
-                <div class="login-tabs">
-                    <button class="tab-btn active" onclick="switchTab('login')">Login</button>
-                    <button class="tab-btn" onclick="switchTab('register')">Register</button>
+            <div class="login-card glass-panel fade-in">
+                <div class="login-tabs" style="border-bottom: 1px solid var(--border-color); display: flex;">
+                    <button class="tab-btn active" onclick="switchTab('login')" style="flex: 1; padding: 1rem; color: var(--text-primary); background: transparent; border: none; border-bottom: 2px solid var(--primary-red); transition: all 0.3s ease;">Login</button>
+                    <button class="tab-btn" onclick="switchTab('register')" style="flex: 1; padding: 1rem; color: var(--text-secondary); background: transparent; border: none; transition: all 0.3s ease;">Register</button>
                 </div>
 
                 <!-- Login Form -->
                 <div id="loginForm" class="auth-form">
                     <div class="form-header">
-                        <h2><i class="fas fa-sign-in-alt"></i> Welcome Back</h2>
-                        <p>Please sign in to your account</p>
+                        <h2 style="color: var(--text-primary); text-shadow: var(--shadow-neon);"><i class="fas fa-sign-in-alt" style="color: var(--neon-blue);"></i> Welcome Back</h2>
+                        <p style="color: var(--text-secondary);">Please sign in to your account</p>
                     </div>
 
                     <form onsubmit="handleLogin(event)">
@@ -100,17 +101,17 @@
 
                         <div class="form-group">
                             <label class="form-label">Login As</label>
-                            <div class="role-selector">
-                                <label class="role-option">
+                            <div class="role-selector" style="display: flex; gap: 1rem; background: rgba(0,0,0,0.1); padding: 0.5rem; border-radius: 8px;">
+                                <label class="role-option" style="flex: 1;">
                                     <input type="radio" name="userRole" value="student" checked>
-                                    <span class="role-label">
+                                    <span class="role-label" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.5rem; border-radius: 6px; cursor: pointer; transition: background 0.3s ease;">
                                         <i class="fas fa-user-graduate"></i>
                                         Student
                                     </span>
                                 </label>
-                                <label class="role-option">
+                                <label class="role-option" style="flex: 1;">
                                     <input type="radio" name="userRole" value="warden">
-                                    <span class="role-label">
+                                    <span class="role-label" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.5rem; border-radius: 6px; cursor: pointer; transition: background 0.3s ease;">
                                         <i class="fas fa-user-shield"></i>
                                         Warden
                                     </span>
@@ -119,7 +120,7 @@
                         </div>
 
                         <div class="form-actions">
-                            <button type="submit" class="btn btn-primary btn-block" id="loginBtn">
+                            <button type="submit" class="btn btn-primary btn-block futuristic pulse-neon" id="loginBtn">
                                 <i class="fas fa-sign-in-alt"></i> Sign In
                             </button>
                         </div>
@@ -133,8 +134,8 @@
                 <!-- Register Form -->
                 <div id="registerForm" class="auth-form hidden">
                     <div class="form-header">
-                        <h2><i class="fas fa-user-plus"></i> Create Account</h2>
-                        <p>Join the AU Hostel Accommodation System</p>
+                        <h2 style="color: var(--text-primary); text-shadow: var(--shadow-neon);"><i class="fas fa-user-plus" style="color: var(--neon-purple);"></i> Create Account</h2>
+                        <p style="color: var(--text-secondary);">Join the AU Hostel Accommodation System</p>
                     </div>
 
                     <form onsubmit="handleRegister(event)">
@@ -218,8 +219,8 @@
                             </div>
                         </div>
 
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary btn-block" id="registerBtn">
+                        <div class="form-actions mt-2">
+                            <button type="submit" class="btn btn-primary btn-block futuristic" id="registerBtn">
                                 <i class="fas fa-user-plus"></i> Create Account
                             </button>
                         </div>

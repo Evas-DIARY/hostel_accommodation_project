@@ -69,8 +69,20 @@ class FirebaseService {
     async handleInactivityLogout() {
         if (this.auth.currentUser) {
             await this.signOut();
-            alert('You have been logged out due to inactivity.');
-            window.location.href = 'pages/login.html';
+            
+            // Create a styled modal instead of a blocking alert
+            const modalHTML = `
+                <div id="inactivityModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+                    <div style="background: var(--bg-primary, #1a1a1a); border: 1px solid var(--primary-red, #D32F2F); padding: 2rem; border-radius: 16px; text-align: center; box-shadow: 0 0 20px rgba(211,47,47,0.4); max-width: 400px;">
+                        <i class="fas fa-user-clock" style="font-size: 3rem; color: var(--primary-red, #D32F2F); margin-bottom: 1rem;"></i>
+                        <h2 style="color: var(--text-primary, #fff); margin-bottom: 1rem;">Session Expired</h2>
+                        <p style="color: var(--text-secondary, #aaa); margin-bottom: 1.5rem;">For your security, you have been logged out due to 5 minutes of inactivity.</p>
+                        <button onclick="window.location.href = window.location.pathname.includes('/pages/') ? 'login.html' : 'pages/login.html'" style="background: linear-gradient(135deg, var(--primary-red, #D32F2F) 0%, var(--primary-dark, #9A0007) 100%); color: white; border: none; padding: 0.75rem 2rem; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%;">Return to Login</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
         }
     }
 
