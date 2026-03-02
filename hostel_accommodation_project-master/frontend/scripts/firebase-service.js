@@ -26,20 +26,22 @@ class FirebaseService {
 
     // Real-time: Listen to a student's applications
     listenToApplications(studentId, callback) {
-        const { onSnapshot, collection, query, where, orderBy } = window.firebaseFunctions;
+        const { onSnapshot, collection, query, where } = window.firebaseFunctions;
         const applicationsRef = collection(this.db, 'applications');
 
-        let q;
-        try {
-            q = query(applicationsRef, where('studentId', '==', studentId), orderBy('submittedAt', 'desc'));
-        } catch (e) {
-            q = query(applicationsRef, where('studentId', '==', studentId));
-        }
+        // Query without orderBy to avoid requiring a composite index
+        const q = query(applicationsRef, where('studentId', '==', studentId));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const applications = [];
             snapshot.forEach((doc) => {
                 applications.push({ id: doc.id, ...doc.data() });
+            });
+            // Sort client-side: newest first
+            applications.sort((a, b) => {
+                const dateA = a.submittedAt?.toDate ? a.submittedAt.toDate() : new Date(a.submittedAt || 0);
+                const dateB = b.submittedAt?.toDate ? b.submittedAt.toDate() : new Date(b.submittedAt || 0);
+                return dateB - dateA;
             });
             callback(applications);
         }, (error) => {
@@ -155,20 +157,22 @@ class FirebaseService {
 
     // Real-time: Listen to notifications for a user
     listenToNotifications(userId, callback) {
-        const { onSnapshot, collection, query, where, orderBy } = window.firebaseFunctions;
+        const { onSnapshot, collection, query, where } = window.firebaseFunctions;
         const notificationsRef = collection(this.db, 'notifications');
 
-        let q;
-        try {
-            q = query(notificationsRef, where('userId', '==', userId), orderBy('createdAt', 'desc'));
-        } catch (e) {
-            q = query(notificationsRef, where('userId', '==', userId));
-        }
+        // Query without orderBy to avoid requiring a composite index
+        const q = query(notificationsRef, where('userId', '==', userId));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const notifications = [];
             snapshot.forEach((doc) => {
                 notifications.push({ id: doc.id, ...doc.data() });
+            });
+            // Sort client-side: newest first
+            notifications.sort((a, b) => {
+                const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+                const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+                return dateB - dateA;
             });
             callback(notifications);
         }, (error) => {
@@ -303,47 +307,41 @@ class FirebaseService {
 
     // Allocate room to a student (Warden)
     async allocateRoom(allocationData) {
-        const { collection, addDoc, doc, updateDoc, serverTimestamp, runTransaction } = window.firebaseFunctions;
+        const { collection, addDoc, doc, updateDoc, getDocs, query, where, serverTimestamp } = window.firebaseFunctions;
 
-        // Use transaction to ensure room capacity isn't exceeded
-        return await runTransaction(this.db, async (transaction) => {
-            const roomRef = doc(this.db, 'rooms', allocationData.roomId);
-            const roomDoc = await transaction.get(roomRef);
+        // Check current occupancy for this room by counting active allocations
+        const allocationsRef = collection(this.db, 'allocations');
+        const roomQuery = query(
+            allocationsRef,
+            where('block', '==', allocationData.block),
+            where('roomNumber', '==', allocationData.roomNumber),
+            where('status', '==', 'active')
+        );
+        const existingSnapshot = await getDocs(roomQuery);
+        const currentOccupancy = existingSnapshot.size;
 
-            if (!roomDoc.exists()) {
-                throw new Error('Room does not exist');
-            }
+        if (currentOccupancy >= 3) {
+            throw new Error('Room is full (3/3 beds occupied)');
+        }
 
-            const room = roomDoc.data();
-            if (room.occupied >= room.capacity) {
-                throw new Error('Room is full');
-            }
+        // Create allocation document
+        const allocationDoc = {
+            ...allocationData,
+            status: 'active',
+            allocatedAt: serverTimestamp()
+        };
 
-            // Create allocation
-            const allocationsRef = collection(this.db, 'allocations');
-            const allocationDoc = {
-                ...allocationData,
-                status: 'active',
-                allocatedAt: serverTimestamp()
-            };
+        await addDoc(allocationsRef, allocationDoc);
 
-            await addDoc(allocationsRef, allocationDoc);
-
-            // Update room occupancy
-            transaction.update(roomRef, {
-                occupied: room.occupied + 1
+        // Update application status if applicationId provided
+        if (allocationData.applicationId) {
+            const applicationRef = doc(this.db, 'applications', allocationData.applicationId);
+            await updateDoc(applicationRef, {
+                status: 'allocated',
+                allocatedRoom: `${allocationData.block}-${allocationData.roomNumber}`,
+                allocatedBlock: allocationData.block
             });
-
-            // Update application status if applicationId provided
-            if (allocationData.applicationId) {
-                const applicationRef = doc(this.db, 'applications', allocationData.applicationId);
-                transaction.update(applicationRef, {
-                    status: 'allocated',
-                    allocatedRoom: `${allocationData.block}-${allocationData.roomNumber}`,
-                    allocatedBlock: allocationData.block
-                });
-            }
-        });
+        }
     }
 
     // Notify student after allocation

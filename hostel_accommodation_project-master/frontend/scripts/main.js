@@ -1368,21 +1368,18 @@ class HostelApp {
 
         const block = blockSelect.value;
 
-        // Generate 40 rooms for the block (4 floors × 10 rooms)
+        // Generate 40 rooms for the block (Room 1 to Room 40)
         roomSelect.innerHTML = '<option value="">Choose a room...</option>';
-        for (let floor = 1; floor <= 4; floor++) {
-            for (let room = 1; room <= 10; room++) {
-                const roomNum = `${floor}${room.toString().padStart(2, '0')}`;
-                const roomId = `${block}-${roomNum}`;
-                // Check if room is in allocations (basic check)
-                const isOccupied = this._allAllocations.filter(a => a.status === 'active' && a.roomNumber === roomNum && a.block === block).length;
-                const spotsUsed = isOccupied;
-                const spotsLeft = 3 - spotsUsed;
-                if (spotsLeft > 0) {
-                    roomSelect.innerHTML += `<option value="${roomId}" data-number="${roomNum}" data-block="${block}">Room ${roomNum} — Floor ${floor} (${spotsLeft} bed${spotsLeft > 1 ? 's' : ''} free)</option>`;
-                } else {
-                    roomSelect.innerHTML += `<option value="${roomId}" data-number="${roomNum}" data-block="${block}" disabled style="color: var(--text-secondary);">Room ${roomNum} — Floor ${floor} (Full)</option>`;
-                }
+        for (let room = 1; room <= 40; room++) {
+            const roomNum = room.toString();
+            const roomId = `${block}-${roomNum}`;
+            // Check if room is in allocations (basic check)
+            const spotsUsed = this._allAllocations.filter(a => a.status === 'active' && a.roomNumber === roomNum && a.block === block).length;
+            const spotsLeft = 3 - spotsUsed;
+            if (spotsLeft > 0) {
+                roomSelect.innerHTML += `<option value="${roomId}" data-number="${roomNum}" data-block="${block}">Room ${roomNum} (${spotsLeft} bed${spotsLeft > 1 ? 's' : ''} free)</option>`;
+            } else {
+                roomSelect.innerHTML += `<option value="${roomId}" data-number="${roomNum}" data-block="${block}" disabled style="color: var(--text-secondary);">Room ${roomNum} (Full)</option>`;
             }
         }
     }
@@ -1837,29 +1834,27 @@ class HostelApp {
 
     generateWardenRoomCards(block, roomMap) {
         let html = '';
-        for (let floor = 1; floor <= 4; floor++) {
-            for (let room = 1; room <= 10; room++) {
-                const roomNum = `${floor}${room.toString().padStart(2, '0')}`;
-                const occupants = roomMap[roomNum] || [];
-                const spotsLeft = 3 - occupants.length;
-                const statusColor = spotsLeft === 3 ? 'var(--accent-green)' : spotsLeft === 0 ? 'var(--primary-red)' : 'var(--accent-orange)';
+        for (let room = 1; room <= 40; room++) {
+            const roomNum = room.toString();
+            const occupants = roomMap[roomNum] || [];
+            const spotsLeft = 3 - occupants.length;
+            const statusColor = spotsLeft === 3 ? 'var(--accent-green)' : spotsLeft === 0 ? 'var(--primary-red)' : 'var(--accent-orange)';
 
-                html += `
-                    <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px; border-left: 3px solid ${statusColor}; font-size: 0.85rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${occupants.length ? '0.5rem' : '0'};">
-                            <span style="font-weight: 600; color: var(--text-primary);"><i class="fas fa-door-closed" style="color: var(--primary-red); font-size: 0.75rem;"></i> ${block}-${roomNum}</span>
-                            <span style="font-size: 0.7rem; color: ${statusColor}; font-weight: 600;">${spotsLeft === 0 ? 'Full' : spotsLeft + '/' + 3 + ' free'}</span>
-                        </div>
-                        ${occupants.length > 0 ? `
-                            <div style="display: flex; flex-direction: column; gap: 0.2rem;">
-                                ${occupants.map(name => `
-                                    <span style="color: var(--text-secondary); font-size: 0.75rem;"><i class="fas fa-user" style="color: var(--accent-blue); font-size: 0.6rem;"></i> ${name}</span>
-                                `).join('')}
-                            </div>
-                        ` : ''}
+            html += `
+                <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px; border-left: 3px solid ${statusColor}; font-size: 0.85rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${occupants.length ? '0.5rem' : '0'};">
+                        <span style="font-weight: 600; color: var(--text-primary);"><i class="fas fa-door-closed" style="color: var(--primary-red); font-size: 0.75rem;"></i> ${block}-${roomNum}</span>
+                        <span style="font-size: 0.7rem; color: ${statusColor}; font-weight: 600;">${spotsLeft === 0 ? 'Full' : spotsLeft + '/' + 3 + ' free'}</span>
                     </div>
-                `;
-            }
+                    ${occupants.length > 0 ? `
+                        <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                            ${occupants.map(name => `
+                                <span style="color: var(--text-secondary); font-size: 0.75rem;"><i class="fas fa-user" style="color: var(--accent-blue); font-size: 0.6rem;"></i> ${name}</span>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
         }
         return html;
     }

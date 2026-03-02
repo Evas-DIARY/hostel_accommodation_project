@@ -26,8 +26,8 @@
   --primary-dark: #b71c1c;
   --neon-blue: #0284c7;
   --neon-purple: #7e22ce;
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(0, 0, 0, 0.05);
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(0, 0, 0, 0.08);
   --shadow-neon:
     0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
@@ -187,4 +187,31 @@
   border-color: var(--neon-blue);
   box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
   outline: none;
+}
+
+/* Light mode glass panel text visibility fix */
+:root[data-theme="light"] .glass-panel {
+  color: #1a1a1a;
+}
+
+:root[data-theme="light"] .glass-panel h2,
+:root[data-theme="light"] .glass-panel h3,
+:root[data-theme="light"] .glass-panel h4,
+:root[data-theme="light"] .glass-panel strong {
+  color: #1a1a1a;
+}
+
+:root[data-theme="light"] .glass-panel p,
+:root[data-theme="light"] .glass-panel span,
+:root[data-theme="light"] .glass-panel label,
+:root[data-theme="light"] .glass-panel div {
+  color: #2d2d2d;
+}
+
+:root[data-theme="light"] .glass-panel .card-header h3 {
+  color: #1a1a1a;
+}
+
+:root[data-theme="light"] .glass-panel a {
+  color: var(--primary-red);
 }
