@@ -2205,5 +2205,119 @@ body {
 }
 
 
+/* ===== Notification Bell ===== */
+.notification-bell {
+    position: relative;
+    cursor: pointer;
+    padding: 0.5rem;
+    transition: transform 0.3s ease;
+}
+
+.notification-bell:hover {
+    transform: scale(1.1);
+}
+
+.notif-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: var(--accent-orange);
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse 2s infinite;
+}
+
+.notif-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 340px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: var(--bg-primary);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+    z-index: 1001;
+    margin-top: 0.5rem;
+}
+
+/* Notification dropdown scrollbar */
+.notif-dropdown::-webkit-scrollbar {
+    width: 4px;
+}
+.notif-dropdown::-webkit-scrollbar-thumb {
+    background: var(--primary-red);
+    border-radius: 2px;
+}
+
+/* ===== Profile Photo Upload Overlay ===== */
+.profile-avatar-wrapper {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.profile-avatar-wrapper:hover {
+    transform: scale(1.05);
+}
+
+.profile-avatar-wrapper:hover .photo-upload-overlay {
+    transform: scale(1.15);
+}
+
+.photo-upload-overlay {
+    transition: transform 0.3s ease;
+}
+
+/* ===== News Containers ===== */
+.news-container {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.news-container:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+}
+
+/* ===== Responsive: News Grid ===== */
+@media (max-width: 992px) {
+    #newsContainers {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+@media (max-width: 576px) {
+    #newsContainers {
+        grid-template-columns: 1fr !important;
+    }
+    .notif-dropdown {
+        width: 280px !important;
+        right: -50px !important;
+    }
+}
+
+/* ===== Responsive: Warden Room Tab Toggle ===== */
+@media (max-width: 576px) {
+    #tabGirls, #tabBoys {
+        font-size: 0.85rem;
+        padding: 0.6rem !important;
+    }
+}
+
+/* ===== Responsive: Allocation Form ===== */
+@media (max-width: 768px) {
+    .fade-in > div[style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+}
+
 /* End of CSS file */
 

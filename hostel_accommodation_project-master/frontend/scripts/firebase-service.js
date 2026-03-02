@@ -153,6 +153,74 @@ class FirebaseService {
         return unsubscribe;
     }
 
+    // Real-time: Listen to notifications for a user
+    listenToNotifications(userId, callback) {
+        const { onSnapshot, collection, query, where, orderBy } = window.firebaseFunctions;
+        const notificationsRef = collection(this.db, 'notifications');
+
+        let q;
+        try {
+            q = query(notificationsRef, where('userId', '==', userId), orderBy('createdAt', 'desc'));
+        } catch (e) {
+            q = query(notificationsRef, where('userId', '==', userId));
+        }
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const notifications = [];
+            snapshot.forEach((doc) => {
+                notifications.push({ id: doc.id, ...doc.data() });
+            });
+            callback(notifications);
+        }, (error) => {
+            console.warn('FirebaseService: listenToNotifications error:', error.message);
+            callback([]);
+        });
+
+        this.unsubscribers.push(unsubscribe);
+        return unsubscribe;
+    }
+
+    // Add a notification
+    async addNotification(userId, message, type = 'info') {
+        const { collection, addDoc, serverTimestamp } = window.firebaseFunctions;
+        const notificationsRef = collection(this.db, 'notifications');
+
+        return await addDoc(notificationsRef, {
+            userId: userId,
+            message: message,
+            type: type,
+            read: false,
+            createdAt: serverTimestamp()
+        });
+    }
+
+    // Mark notification as read
+    async markNotificationRead(notificationId) {
+        const { doc, updateDoc } = window.firebaseFunctions;
+        const notifRef = doc(this.db, 'notifications', notificationId);
+        return await updateDoc(notifRef, { read: true });
+    }
+
+    // Mark all notifications as read
+    async markAllNotificationsRead(userId) {
+        const { collection, query, where, getDocs, doc, updateDoc } = window.firebaseFunctions;
+        const notificationsRef = collection(this.db, 'notifications');
+        const q = query(notificationsRef, where('userId', '==', userId), where('read', '==', false));
+        const snapshot = await getDocs(q);
+        const promises = [];
+        snapshot.forEach((d) => {
+            promises.push(updateDoc(doc(this.db, 'notifications', d.id), { read: true }));
+        });
+        return await Promise.all(promises);
+    }
+
+    // Update user profile (for photo etc.)
+    async updateUserProfile(userId, data) {
+        const { doc, updateDoc } = window.firebaseFunctions;
+        const userRef = doc(this.db, 'users', userId);
+        return await updateDoc(userRef, data);
+    }
+
     // Submit a new application
     async submitApplication(applicationData) {
         const { collection, addDoc, serverTimestamp } = window.firebaseFunctions;
@@ -166,32 +234,71 @@ class FirebaseService {
             reviewedAt: null
         };
 
-        return await addDoc(applicationsRef, data);
+        const result = await addDoc(applicationsRef, data);
+
+        // Create a notification for the student
+        try {
+            await this.addNotification(
+                applicationData.studentId,
+                'Your accommodation application has been submitted successfully! It is now pending review by the warden.',
+                'success'
+            );
+        } catch (e) {
+            console.warn('Could not create notification:', e.message);
+        }
+
+        return result;
     }
 
     // Approve application (Warden)
-    async approveApplication(applicationId, wardenId) {
+    async approveApplication(applicationId, wardenId, studentId) {
         const { doc, updateDoc, serverTimestamp } = window.firebaseFunctions;
         const applicationRef = doc(this.db, 'applications', applicationId);
 
-        return await updateDoc(applicationRef, {
+        await updateDoc(applicationRef, {
             status: 'approved',
             reviewedBy: wardenId,
             reviewedAt: serverTimestamp()
         });
+
+        // Notify student
+        if (studentId) {
+            try {
+                await this.addNotification(
+                    studentId,
+                    'Your accommodation application has been approved! The warden will assign you a room shortly.',
+                    'success'
+                );
+            } catch (e) {
+                console.warn('Could not create notification:', e.message);
+            }
+        }
     }
 
     // Reject application (Warden)
-    async rejectApplication(applicationId, wardenId, reason) {
+    async rejectApplication(applicationId, wardenId, reason, studentId) {
         const { doc, updateDoc, serverTimestamp } = window.firebaseFunctions;
         const applicationRef = doc(this.db, 'applications', applicationId);
 
-        return await updateDoc(applicationRef, {
+        await updateDoc(applicationRef, {
             status: 'rejected',
             reviewedBy: wardenId,
             reviewedAt: serverTimestamp(),
             rejectionReason: reason || 'No reason provided'
         });
+
+        // Notify student
+        if (studentId) {
+            try {
+                await this.addNotification(
+                    studentId,
+                    `Your accommodation application has been rejected. Reason: ${reason || 'No reason provided'}`,
+                    'error'
+                );
+            } catch (e) {
+                console.warn('Could not create notification:', e.message);
+            }
+        }
     }
 
     // Allocate room to a student (Warden)
@@ -232,10 +339,24 @@ class FirebaseService {
                 const applicationRef = doc(this.db, 'applications', allocationData.applicationId);
                 transaction.update(applicationRef, {
                     status: 'allocated',
-                    allocatedRoom: allocationData.roomNumber || allocationData.roomId
+                    allocatedRoom: `${allocationData.block}-${allocationData.roomNumber}`,
+                    allocatedBlock: allocationData.block
                 });
             }
         });
+    }
+
+    // Notify student after allocation
+    async notifyAllocation(studentId, block, roomNumber) {
+        try {
+            await this.addNotification(
+                studentId,
+                `You have been allocated to Block ${block}, Room ${roomNumber}. Check your View Rooms tab for details.`,
+                'success'
+            );
+        } catch (e) {
+            console.warn('Could not create allocation notification:', e.message);
+        }
     }
 
     // Get user data

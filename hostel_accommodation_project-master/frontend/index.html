@@ -73,8 +73,21 @@
                 <div class="theme-toggle-nav" onclick="toggleTheme()">
                     <i class="fas fa-moon" id="themeIconNav"></i>
                 </div>
+                <div class="notification-bell" id="notificationBell" onclick="app.toggleNotificationDropdown()" style="position: relative; cursor: pointer; padding: 0.5rem; margin-right: 0.25rem;">
+                    <i class="fas fa-bell" style="font-size: 1.2rem; color: rgba(255,255,255,0.9);"></i>
+                    <span class="notif-badge" id="notifBadge" style="display: none; position: absolute; top: 0; right: 0; background: var(--accent-orange); color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 0.65rem; font-weight: 700; display: none; align-items: center; justify-content: center;">0</span>
+                    <div class="notif-dropdown" id="notifDropdown" style="display: none; position: absolute; top: 100%; right: 0; width: 340px; max-height: 400px; overflow-y: auto; background: var(--bg-primary); border-radius: 12px; box-shadow: var(--shadow-lg); border: 1px solid var(--border-color); z-index: 1001; margin-top: 0.5rem;">
+                        <div style="padding: 1rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                            <h4 style="margin: 0; color: var(--text-primary);"><i class="fas fa-bell"></i> Notifications</h4>
+                            <button onclick="app.markAllRead(event)" style="background: none; border: none; color: var(--accent-blue); cursor: pointer; font-size: 0.8rem;">Mark all read</button>
+                        </div>
+                        <div id="notifList" style="padding: 0.5rem;">
+                            <p style="text-align: center; color: var(--text-secondary); padding: 1rem; font-size: 0.9rem;">No notifications yet</p>
+                        </div>
+                    </div>
+                </div>
                 <div class="user-profile">
-                    <img src="assets/images/logo.png" alt="User" class="avatar">
+                    <img src="assets/images/logo.png" alt="User" class="avatar" id="navAvatar">
                     <span class="user-name">Loading...</span>
                     <div class="user-menu">
                         <button class="logout-btn">

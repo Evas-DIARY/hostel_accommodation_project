@@ -95,3 +95,10 @@
         padding: var(--spacing-lg) var(--spacing-sm) var(--spacing-md);
     }
 }
+
+/* Responsive: Warden dashboard two-column layout */
+@media (max-width: 992px) {
+    .fade-in > div[style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+}
