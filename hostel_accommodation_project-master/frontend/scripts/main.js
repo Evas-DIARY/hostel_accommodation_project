@@ -2,88 +2,96 @@
 class HostelApp {
     constructor() {
         this.currentUser = null;
+        this.currentSlide = 0;
+        this.totalSlides = 4;
+        this.autoSlideInterval = null;
     }
 
     async init() {
-        // DOM Elements
         this.navMenu = document.getElementById('navMenu');
         this.mobileMenuBtn = document.getElementById('mobileMenuBtn');
         this.mainContent = document.getElementById('mainContent');
         this.loadingSpinner = document.getElementById('loadingSpinner');
 
-        // Initialize Firebase service first to enable persistence before any DB calls
-        if (typeof window.firebaseAuth !== 'undefined' && window.firebaseService) {
+        // Initialize Firebase service
+        if (window.firebaseDb && window.firebaseService) {
             await window.firebaseService.init();
         }
 
-        // Initialize auth manager
-        authManager.init();
-        
-        // Check authentication and setup
+        // Initialize auth
+        await authManager.init();
+
         this.checkAuth();
         this.setupEventListeners();
     }
 
     async checkAuth() {
-        // Wait for auth manager to initialize
+        // Wait for auth to initialize
         await new Promise(resolve => {
-            const checkReady = () => {
-                if (authManager.user !== undefined) {
-                    resolve();
-                } else {
-                    setTimeout(checkReady, 100);
-                }
+            const check = () => {
+                if (authManager.user !== undefined) resolve();
+                else setTimeout(check, 100);
             };
-            checkReady();
+            check();
         });
 
-        // Check if user is authenticated
         if (authManager.isAuthenticated()) {
-            this.loadDashboard();
-        } else {
-            // User is not authenticated, redirect to login
+            // Wait for currentUser to be set by auth onLogin
+            await new Promise(resolve => {
+                const check = () => {
+                    if (this.currentUser && this.currentUser.name) resolve();
+                    else if (authManager.user === null) resolve();
+                    else setTimeout(check, 200);
+                };
+                setTimeout(() => resolve(), 3000); // timeout safety
+                check();
+            });
+
             if (!window.location.pathname.includes('login.html')) {
-                // Check if we are already in the pages directory to avoid pages/pages/login.html
+                this.loadDashboard();
+            }
+        } else {
+            if (!window.location.pathname.includes('login.html')) {
                 const loginPath = window.location.pathname.includes('/pages/') ? 'login.html' : 'pages/login.html';
                 window.location.href = loginPath;
             }
         }
-        this.currentUser = authManager.user;
         this.hideLoading();
     }
 
     async loadDashboard() {
-        // Load the dashboard content based on user role
         await this.loadPage('dashboard');
     }
 
     setupEventListeners() {
-        // Mobile menu toggle
+        // Mobile menu
         this.mobileMenuBtn?.addEventListener('click', () => {
             this.navMenu.classList.toggle('active');
         });
 
-        // Navigation clicks
+        // Nav clicks
         document.addEventListener('click', (e) => {
-            if (e.target.closest('.nav-link')) {
+            const navLink = e.target.closest('.nav-link');
+            if (navLink) {
                 e.preventDefault();
-                const target = e.target.closest('.nav-link').getAttribute('href').substring(1);
-                this.loadPage(target);
-                this.setActiveNav(target);
-
-                // Close mobile menu on click
-                this.navMenu.classList.remove('active');
+                const href = navLink.getAttribute('href');
+                if (href && href.startsWith('#')) {
+                    const target = href.substring(1);
+                    this.loadPage(target);
+                    this.setActiveNav(target);
+                    this.navMenu.classList.remove('active');
+                }
             }
         });
 
-        // Close mobile menu when clicking outside
+        // Close mobile menu outside
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.nav-menu') && !e.target.closest('.mobile-menu-btn')) {
-                this.navMenu.classList.remove('active');
+                this.navMenu?.classList.remove('active');
             }
         });
 
-        // Logout functionality
+        // Logout
         document.addEventListener('click', (e) => {
             if (e.target.closest('.logout-btn')) {
                 this.handleLogout();
@@ -92,70 +100,48 @@ class HostelApp {
     }
 
     setActiveNav(page) {
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.classList.remove('active');
-        });
-        
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
         const activeLink = document.querySelector(`.nav-link[href="#${page}"]`);
-        if (activeLink) {
-            activeLink.classList.add('active');
-        }
+        if (activeLink) activeLink.classList.add('active');
     }
 
     async loadPage(page) {
         this.showLoading();
-        
         try {
             let content = '';
-            
-            switch(page) {
-                case 'dashboard':
-                    content = await this.loadDashboardContent();
-                    break;
-                case 'apply':
-                    content = await this.loadApplicationForm();
-                    break;
-                case 'status':
-                    content = await this.loadApplicationStatus();
-                    break;
-                case 'rooms':
-                    content = await this.loadRoomView();
-                    break;
-                case 'allocation':
-                    content = await this.loadAllocationPage();
-                    break;
-                case 'applications':
-                    content = await this.loadApplicationsPage();
-                    break;
-                case 'reports':
-                    content = await this.loadReportsPage();
-                    break;
-                case 'login':
-                    content = await this.loadLoginPage();
-                    break;
-                default:
-                    content = await this.loadDashboardContent();
+            switch (page) {
+                case 'dashboard': content = await this.loadDashboardContent(); break;
+                case 'apply': content = await this.loadApplicationForm(); break;
+                case 'status': content = await this.loadApplicationStatus(); break;
+                case 'rooms': content = await this.loadRoomView(); break;
+                case 'allocation': content = await this.loadAllocationPage(); break;
+                case 'applications': content = await this.loadApplicationsPage(); break;
+                case 'reports': content = await this.loadReportsPage(); break;
+                default: content = await this.loadDashboardContent();
             }
-            
             this.mainContent.innerHTML = content;
             this.initPageComponents(page);
         } catch (error) {
+            console.error('Error loading page:', error);
             this.showError('Failed to load page');
         } finally {
             this.hideLoading();
         }
     }
 
+    // ========================
+    // DASHBOARD
+    // ========================
+
     async loadDashboardContent() {
         const userRole = this.currentUser?.role || 'student';
-
         if (userRole === 'warden' || userRole === 'admin') {
             return this.loadWardenDashboard();
-        } else {
-            return this.loadStudentDashboard();
         }
+        return this.loadStudentDashboard();
     }
 
+    // --- STUDENT DASHBOARD ---
     async loadStudentDashboard() {
         const quotes = [
             "Success is not final, failure is not fatal: it is the courage to continue that counts.",
@@ -165,53 +151,11 @@ class HostelApp {
             "Your time is limited, don't waste it living someone else's life."
         ];
         const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
-        const userName = this.currentUser?.name || this.currentUser?.full_name || 'Student';
-        const userId = this.currentUser?.id || this.currentUser?.registration_number;
-        
-        // Start listening to applications and allocations if Firebase is enabled
-        if (window.firebaseService && typeof window.firebaseAuth !== 'undefined') {
-             // We setup listeners and update the DOM directly when data changes
-             setTimeout(() => {
-                 window.firebaseService.listenToApplications(userId, (applications) => {
-                     const appStatusContainer = document.getElementById('dashboard-app-status-inner');
-                     if (appStatusContainer) {
-                         if (applications.length > 0) {
-                             const latestApp = applications[0]; // Assuming sorted or just taking latest
-                             appStatusContainer.innerHTML = `
-                                <p>Latest Application Status: <strong class="${latestApp.status === 'approved' ? 'text-green' : 'text-orange'}">${latestApp.status.toUpperCase()}</strong></p>
-                                <button class="btn btn-outline mt-2 futuristic" onclick="app.viewApplicationDetails('${latestApp.id}')">
-                                    View Details <i class="fas fa-arrow-right"></i>
-                                </button>
-                             `;
-                         } else {
-                              appStatusContainer.innerHTML = `<p>No applications found.</p>`;
-                         }
-                     }
-                 });
+        const userName = this.currentUser?.name || 'Student';
+        const userId = this.currentUser?.id || '';
 
-                 window.firebaseService.listenToRoomAllocation(userId, (allocations) => {
-                     const roomStatusContainer = document.getElementById('dashboard-room-status-inner');
-                     if (roomStatusContainer) {
-                         if (allocations.length > 0) {
-                             const allocation = allocations[0];
-                             roomStatusContainer.innerHTML = `
-                                <div class="room-info" style="color: var(--text-primary); font-size: 1.1rem; margin-bottom: 1rem;">
-                                    <p><strong>Room:</strong> <span style="color: var(--neon-blue); text-shadow: var(--shadow-neon);">${allocation.roomId || 'Assigned'}</span></p>
-                                    <p><strong>Hostel:</strong> ${allocation.hostelBlock || 'Standard Block'}</p>
-                                </div>
-                                <button class="btn btn-info mt-2 futuristic pulse-neon" onclick="app.viewRoomDetails()">
-                                    <i class="fas fa-eye"></i> View Room Details
-                                </button>
-                             `;
-                             document.getElementById('room-status-badge').innerHTML = `<i class="fas fa-check"></i> Allocated`;
-                         } else {
-                              roomStatusContainer.innerHTML = `<p>You have not been allocated a room yet.</p>`;
-                              document.getElementById('room-status-badge').innerHTML = `<i class="fas fa-clock"></i> Pending`;
-                         }
-                     }
-                 });
-             }, 500);
-        }
+        // Setup real-time listeners after DOM renders
+        setTimeout(() => this.setupStudentListeners(userId), 300);
 
         return `
             <div class="dashboard-header futuristic fade-in" style="padding: 2rem; border-radius: 16px; margin-bottom: 2rem;">
@@ -219,7 +163,22 @@ class HostelApp {
                 <p style="font-style:italic;color:var(--text-secondary);margin-top:0.5rem">"${randomQuote}"</p>
             </div>
 
-            <!-- Profile Section -->
+            <!-- Image Slider -->
+            <div class="image-slider fade-in" style="animation-delay: 0.05s;">
+                <div class="slider-container">
+                    <div class="slider-track" id="sliderTrack">
+                        <div class="slide"><img src="assets/images/1.jpg" alt="Modern Accommodations"><div class="slide-overlay"><h3>Modern Accommodations</h3><p>Experience the best of student living at AU.</p></div></div>
+                        <div class="slide"><img src="assets/images/2.jpg" alt="Safe & Secure"><div class="slide-overlay"><h3>Safe & Secure</h3><p>24/7 security and warden support for your peace of mind.</p></div></div>
+                        <div class="slide"><img src="assets/images/3.jpg" alt="Vibrant Community"><div class="slide-overlay"><h3>Vibrant Community</h3><p>Join a community of scholars from across the continent.</p></div></div>
+                        <div class="slide"><img src="assets/images/4.jpg" alt="Excellence in Service"><div class="slide-overlay"><h3>Excellence in Service</h3><p>Dedicated staff committed to your academic success.</p></div></div>
+                    </div>
+                    <button class="slider-arrow prev" onclick="app.prevSlide()"><i class="fas fa-chevron-left"></i></button>
+                    <button class="slider-arrow next" onclick="app.nextSlide()"><i class="fas fa-chevron-right"></i></button>
+                    <div class="slider-nav" id="sliderNav"></div>
+                </div>
+            </div>
+
+            <!-- Personal Information -->
             <div class="profile-section fade-in glass-panel" style="animation-delay: 0.1s; margin-bottom: 2rem; padding: 2rem;">
                 <div class="profile-header">
                     <div class="profile-avatar" style="box-shadow: var(--shadow-neon); border-radius: 50%;">
@@ -227,41 +186,46 @@ class HostelApp {
                     </div>
                     <div class="profile-info">
                         <h2 style="color: var(--neon-blue);">${userName}</h2>
-                        <p><i class="fas fa-id-card"></i> ID: ${userId || 'N/A'}</p>
-                        <p><i class="fas fa-envelope"></i> ${this.currentUser?.email || 'email@au.edu'}</p>
-                        <p><i class="fas fa-graduation-cap"></i> ${this.currentUser?.program || 'Program'}</p>
+                        <p><i class="fas fa-id-card"></i> Reg No: ${userId || 'N/A'}</p>
+                        <p><i class="fas fa-envelope"></i> ${this.currentUser?.email || 'N/A'}</p>
+                        <p><i class="fas fa-graduation-cap"></i> ${this.currentUser?.program || 'N/A'}</p>
+                        <p><i class="fas fa-venus-mars"></i> ${this.currentUser?.gender ? this.currentUser.gender.charAt(0).toUpperCase() + this.currentUser.gender.slice(1) : 'N/A'}</p>
                     </div>
                 </div>
             </div>
 
             <div class="dashboard-grid">
-                <!-- Application Status -->
+                <!-- Application Status Card -->
                 <div class="card fade-in glass-panel" style="animation-delay: 0.2s">
                     <div class="card-header">
                         <h3 style="color: var(--text-primary);"><i class="fas fa-clipboard-check" style="color: var(--neon-purple);"></i> Application Status</h3>
                     </div>
                     <div id="dashboard-app-status-inner">
-                        <div class="spinner" style="width: 20px; height: 20px;"></div> Loading...
+                        <p style="color: var(--text-secondary); text-align: center; padding: 1rem;">
+                            <i class="fas fa-spinner fa-spin"></i> Loading application status...
+                        </p>
                     </div>
                 </div>
 
-                <!-- My Room / Real-Time allocation injected here -->
+                <!-- My Room Card -->
                 <div class="card fade-in glass-panel" style="animation-delay: 0.3s">
                     <div class="card-header">
                         <h3 style="color: var(--text-primary);"><i class="fas fa-home" style="color: var(--neon-blue);"></i> My Room</h3>
-                        <span id="room-status-badge" class="status-badge status-approved" style="color: var(--neon-blue); border-color: var(--neon-blue);">
+                        <span id="room-status-badge" class="status-badge" style="color: var(--neon-blue); border: 1px solid var(--neon-blue); padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">
                             <i class="fas fa-spinner fa-spin"></i> Checking
                         </span>
                     </div>
                     <div id="dashboard-room-status-inner">
-                        <div class="spinner" style="width: 20px; height: 20px;"></div> Loading room data...
+                        <p style="color: var(--text-secondary); text-align: center; padding: 1rem;">
+                            <i class="fas fa-spinner fa-spin"></i> Loading room data...
+                        </p>
                     </div>
                 </div>
 
                 <!-- Quick Actions -->
                 <div class="card fade-in glass-panel" style="animation-delay: 0.4s">
                     <div class="card-header">
-                        <h3 style="color: var(--text-primary);"><i class="fas fa-bolt" style="color: var(--primary-red); text-shadow: 0 0 10px rgba(211,47,47,0.5);"></i> Quick Actions</h3>
+                        <h3 style="color: var(--text-primary);"><i class="fas fa-bolt" style="color: var(--primary-red);"></i> Quick Actions</h3>
                     </div>
                     <div class="action-grid">
                         <button class="action-btn futuristic glass-panel" onclick="app.loadPage('apply')">
@@ -272,88 +236,290 @@ class HostelApp {
                             <i class="fas fa-history" style="color: var(--neon-blue);"></i>
                             <span style="color: var(--text-primary);">Check Status</span>
                         </button>
+                        <button class="action-btn futuristic glass-panel" onclick="app.loadPage('rooms')">
+                            <i class="fas fa-bed" style="color: var(--accent-green);"></i>
+                            <span style="color: var(--text-primary);">View Rooms</span>
+                        </button>
                     </div>
                 </div>
             </div>
         `;
     }
 
-    async loadWardenDashboard() {
-        // Start listening to pending applications if Firebase is enabled
-        if (window.firebaseService && typeof window.firebaseAuth !== 'undefined') {
-             setTimeout(() => {
-                 window.firebaseService.listenToPendingApplications((applications) => {
-                     const listContainer = document.getElementById('warden-pending-apps-list');
-                     const countContainer = document.getElementById('warden-pending-count');
-                     
-                     if (listContainer && countContainer) {
-                         countContainer.innerHTML = `<i class="fas fa-clock"></i> ${applications.length} Pending`;
-                         
-                         if (applications.length > 0) {
-                             listContainer.innerHTML = applications.map(app => `
-                                <div class="application-item" style="padding: 1rem; border-bottom: 1px solid var(--border-color); background: var(--bg-primary); border-radius: 8px; margin-bottom: 0.5rem;">
-                                    <p><strong>${app.studentName || 'Student'}</strong></p>
-                                    <p style="font-size: 0.9rem; color: var(--text-secondary);">Applied: ${app.submittedAt ? new Date(app.submittedAt.toDate()).toLocaleDateString() : 'Recently'}</p>
-                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
-                                        <button class="btn btn-success btn-sm futuristic pulse-neon" style="background: var(--accent-green); color: white; border:none;" onclick="app.approveApplication('${app.id}')">Approve</button>
-                                        <button class="btn btn-danger btn-sm futuristic" style="background: var(--primary-red); color: white; border:none;" onclick="app.rejectApplication('${app.id}')">Reject</button>
-                                    </div>
-                                </div>
-                             `).join('');
-                         } else {
-                             listContainer.innerHTML = `<p style="color: var(--text-secondary); text-align: center; padding: 1rem;">No pending applications.</p>`;
-                         }
-                     }
-                 });
-             }, 500);
+    setupStudentListeners(studentId) {
+        if (!window.firebaseService || !window.firebaseDb) {
+            // No Firestore — show mock/empty state
+            this.updateStudentAppStatus([]);
+            this.updateStudentRoomStatus([]);
+            return;
         }
 
+        window.firebaseService.listenToApplications(studentId, (apps) => {
+            this.updateStudentAppStatus(apps);
+        });
+
+        window.firebaseService.listenToRoomAllocation(studentId, (allocations) => {
+            this.updateStudentRoomStatus(allocations);
+        });
+    }
+
+    updateStudentAppStatus(applications) {
+        const container = document.getElementById('dashboard-app-status-inner');
+        if (!container) return;
+
+        if (applications.length === 0) {
+            container.innerHTML = `
+                <p style="color: var(--text-secondary); text-align: center; padding: 1rem;">
+                    <i class="fas fa-info-circle"></i> No applications submitted yet.
+                </p>
+                <button class="btn btn-primary futuristic" onclick="app.loadPage('apply')" style="width: 100%; margin-top: 0.5rem;">
+                    <i class="fas fa-edit"></i> Apply for Accommodation
+                </button>
+            `;
+            return;
+        }
+
+        const latest = applications[0];
+        const statusColor = latest.status === 'approved' || latest.status === 'allocated' ? 'var(--accent-green)' :
+                           latest.status === 'rejected' ? 'var(--primary-red)' : 'var(--accent-orange)';
+        const statusIcon = latest.status === 'approved' || latest.status === 'allocated' ? 'check-circle' :
+                          latest.status === 'rejected' ? 'times-circle' : 'clock';
+
+        container.innerHTML = `
+            <div style="padding: 0.5rem 0;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                    <i class="fas fa-${statusIcon}" style="font-size: 2rem; color: ${statusColor};"></i>
+                    <div>
+                        <p style="font-weight: 600; color: var(--text-primary); margin: 0;">Status: <span style="color: ${statusColor}; text-transform: uppercase;">${latest.status}</span></p>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0.25rem 0 0 0;">
+                            Preferred Block: ${latest.hostelBlock || 'N/A'}
+                        </p>
+                    </div>
+                </div>
+                ${latest.status === 'rejected' ? `
+                    <p style="color: var(--primary-red); font-size: 0.9rem; background: rgba(211,47,47,0.1); padding: 0.75rem; border-radius: 8px;">
+                        <i class="fas fa-exclamation-triangle"></i> Reason: ${latest.rejectionReason || 'Not specified'}
+                    </p>
+                ` : ''}
+                ${latest.status === 'allocated' && latest.allocatedRoom ? `
+                    <p style="color: var(--accent-green); font-size: 0.9rem; background: rgba(76,175,80,0.1); padding: 0.75rem; border-radius: 8px;">
+                        <i class="fas fa-check-circle"></i> Room assigned: <strong>${latest.allocatedRoom}</strong>
+                    </p>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    updateStudentRoomStatus(allocations) {
+        const container = document.getElementById('dashboard-room-status-inner');
+        const badge = document.getElementById('room-status-badge');
+        if (!container) return;
+
+        if (allocations.length === 0) {
+            container.innerHTML = `
+                <p style="color: var(--text-secondary); text-align: center; padding: 1rem;">
+                    <i class="fas fa-info-circle"></i> You have not been allocated a room yet.
+                </p>
+            `;
+            if (badge) badge.innerHTML = `<i class="fas fa-clock"></i> Pending`;
+            return;
+        }
+
+        const alloc = allocations[0];
+        container.innerHTML = `
+            <div style="padding: 0.5rem 0;">
+                <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 12px; margin-bottom: 1rem;">
+                    <div style="display: grid; gap: 0.75rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: var(--text-secondary);"><i class="fas fa-door-closed"></i> Room</span>
+                            <strong style="color: var(--neon-blue); font-size: 1.2rem;">${alloc.roomNumber || alloc.roomId || 'Assigned'}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: var(--text-secondary);"><i class="fas fa-building"></i> Block</span>
+                            <strong style="color: var(--text-primary);">${alloc.hostelBlock || alloc.block || 'Standard'}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: var(--text-secondary);"><i class="fas fa-star"></i> Condition</span>
+                            <strong style="color: var(--text-primary);">${alloc.roomCondition || 'Good'}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: var(--text-secondary);"><i class="fas fa-users"></i> Capacity</span>
+                            <strong style="color: var(--text-primary);">${alloc.roomCapacity || 3} students</strong>
+                        </div>
+                    </div>
+                </div>
+                ${alloc.amenities ? `
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                        ${(alloc.amenities || []).map(a => `
+                            <span style="background: var(--bg-secondary); padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.8rem; color: var(--text-primary);">
+                                <i class="fas fa-check" style="color: var(--accent-green); font-size: 0.7rem;"></i> ${a}
+                            </span>
+                        `).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+        if (badge) {
+            badge.innerHTML = `<i class="fas fa-check"></i> Allocated`;
+            badge.style.color = 'var(--accent-green)';
+            badge.style.borderColor = 'var(--accent-green)';
+        }
+    }
+
+    // --- WARDEN DASHBOARD ---
+    async loadWardenDashboard() {
+        const wardenName = this.currentUser?.name || 'Warden';
+
+        // Setup real-time listeners after DOM renders
+        setTimeout(() => this.setupWardenDashboardListeners(), 300);
+
         return `
-            <div class="dashboard-header futuristic fade-in" style="padding: 2rem; border-radius: 16px; margin-bottom: 2rem;">
-                <h1 style="color: var(--text-primary); text-shadow: var(--shadow-neon);">Warden Dashboard - <span style="color: var(--neon-purple);">${this.currentUser?.name || 'Warden'}</span></h1>
-                <p style="color: var(--text-secondary);">Manage hostel accommodations, review applications, and allocate rooms in real-time</p>
+            <div class="dashboard-header futuristic fade-in" style="padding: 2rem; border-radius: 16px; margin-bottom: 2rem; background: linear-gradient(135deg, rgba(211,47,47,0.1) 0%, rgba(156,39,176,0.1) 100%);">
+                <h1 style="color: var(--text-primary); text-shadow: var(--shadow-neon);">
+                    <i class="fas fa-user-shield" style="color: var(--neon-purple);"></i> Warden Dashboard
+                </h1>
+                <p style="color: var(--text-secondary);">Welcome, <strong style="color: var(--neon-purple);">${wardenName}</strong> — Manage accommodations, review applications, and allocate rooms</p>
             </div>
 
-            <div class="dashboard-grid">
+            <!-- Stats Overview -->
+            <div class="dashboard-grid fade-in" style="animation-delay: 0.1s; margin-bottom: 2rem;">
+                <div class="card glass-panel" style="background: linear-gradient(135deg, var(--accent-orange) 0%, #F57C00 100%); color: white; padding: 1.5rem; text-align: center;">
+                    <div id="stat-pending" style="font-size: 2.5rem; font-weight: 700;">0</div>
+                    <div><i class="fas fa-clock"></i> Pending Applications</div>
+                </div>
+                <div class="card glass-panel" style="background: linear-gradient(135deg, var(--accent-green) 0%, #388E3C 100%); color: white; padding: 1.5rem; text-align: center;">
+                    <div id="stat-approved" style="font-size: 2.5rem; font-weight: 700;">0</div>
+                    <div><i class="fas fa-check-circle"></i> Approved</div>
+                </div>
+                <div class="card glass-panel" style="background: linear-gradient(135deg, var(--accent-blue) 0%, #1976D2 100%); color: white; padding: 1.5rem; text-align: center;">
+                    <div id="stat-allocated" style="font-size: 2.5rem; font-weight: 700;">0</div>
+                    <div><i class="fas fa-bed"></i> Rooms Allocated</div>
+                </div>
+                <div class="card glass-panel" style="background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-dark) 100%); color: white; padding: 1.5rem; text-align: center;">
+                    <div id="stat-rejected" style="font-size: 2.5rem; font-weight: 700;">0</div>
+                    <div><i class="fas fa-times-circle"></i> Rejected</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;" class="fade-in">
                 <!-- Pending Applications -->
-                <div class="card fade-in glass-panel" style="animation-delay: 0.1s">
-                    <div class="card-header">
-                        <h3 style="color: var(--text-primary);"><i class="fas fa-clipboard-list" style="color: var(--neon-blue);"></i> Pending Applications</h3>
-                        <span id="warden-pending-count" class="status-badge status-pending" style="color: var(--accent-orange); border-color: var(--accent-orange);">
+                <div class="card glass-panel" style="animation-delay: 0.2s">
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="color: var(--text-primary);"><i class="fas fa-clipboard-list" style="color: var(--accent-orange);"></i> Pending Applications</h3>
+                        <span id="warden-pending-count" style="background: var(--accent-orange); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">0</span>
+                    </div>
+                    <div id="warden-pending-apps-list" style="max-height: 400px; overflow-y: auto;">
+                        <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">
                             <i class="fas fa-spinner fa-spin"></i> Loading...
-                        </span>
+                        </p>
                     </div>
-                    <div id="warden-pending-apps-list" class="application-list" style="max-height: 300px; overflow-y: auto; padding-right: 0.5rem;">
-                        <div class="spinner" style="margin: 2rem auto;"></div>
-                    </div>
-                    <button class="btn btn-primary futuristic mt-2" onclick="app.loadPage('applications')" style="width: 100%; margin-top: 1rem;">
+                    <button class="btn btn-primary futuristic" onclick="app.loadPage('applications')" style="width: 100%; margin-top: 1rem;">
                         View All Applications <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>
 
-                <!-- Room Allocation -->
-                <div class="card fade-in glass-panel" style="animation-delay: 0.2s">
+                <!-- Quick Actions -->
+                <div class="card glass-panel" style="animation-delay: 0.3s">
                     <div class="card-header">
-                        <h3 style="color: var(--text-primary);"><i class="fas fa-bed" style="color: var(--neon-purple);"></i> Room Allocation</h3>
+                        <h3 style="color: var(--text-primary);"><i class="fas fa-tools" style="color: var(--neon-purple);"></i> Management</h3>
                     </div>
-                    <p style="color: var(--text-secondary);">Allocate approved students to available rooms dynamically</p>
-                    <button class="btn btn-primary futuristic pulse-neon mt-2" onclick="app.loadPage('allocation')" style="width: 100%; margin-top: 1rem;">
-                        <i class="fas fa-plus"></i> Open Allocation Interface
-                    </button>
-                </div>
-                
-                <!-- Quick Stats Placeholder -->
-                <div class="card fade-in glass-panel" style="animation-delay: 0.3s">
-                    <div class="card-header">
-                        <h3 style="color: var(--text-primary);"><i class="fas fa-chart-bar" style="color: var(--neon-blue);"></i> Statistics</h3>
-                    </div>
-                    <div style="font-style: italic; color: var(--text-secondary); padding: 1rem; text-align: center;">
-                       Live analytics connected to Firestore coming soon...
+                    <div style="display: grid; gap: 1rem; padding: 1rem 0;">
+                        <button class="btn btn-primary futuristic" onclick="app.loadPage('allocation')" style="width: 100%; padding: 1rem; display: flex; align-items: center; gap: 0.75rem;">
+                            <i class="fas fa-bed" style="font-size: 1.2rem;"></i>
+                            <div style="text-align: left;">
+                                <div style="font-weight: 600;">Room Allocation</div>
+                                <div style="font-size: 0.8rem; opacity: 0.8;">Assign rooms to approved students</div>
+                            </div>
+                        </button>
+                        <button class="btn btn-outline futuristic" onclick="app.loadPage('applications')" style="width: 100%; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; border: 2px solid var(--primary-red); color: var(--primary-red); background: transparent;">
+                            <i class="fas fa-clipboard-list" style="font-size: 1.2rem;"></i>
+                            <div style="text-align: left;">
+                                <div style="font-weight: 600;">All Applications</div>
+                                <div style="font-size: 0.8rem; opacity: 0.8;">Review all student applications</div>
+                            </div>
+                        </button>
+                        <button class="btn btn-outline futuristic" onclick="app.loadPage('rooms')" style="width: 100%; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; border: 2px solid var(--accent-blue); color: var(--accent-blue); background: transparent;">
+                            <i class="fas fa-building" style="font-size: 1.2rem;"></i>
+                            <div style="text-align: left;">
+                                <div style="font-weight: 600;">Room Overview</div>
+                                <div style="font-size: 0.8rem; opacity: 0.8;">View all rooms and occupancy</div>
+                            </div>
+                        </button>
+                        <button class="btn btn-outline futuristic" onclick="app.loadPage('reports')" style="width: 100%; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; border: 2px solid var(--accent-green); color: var(--accent-green); background: transparent;">
+                            <i class="fas fa-chart-bar" style="font-size: 1.2rem;"></i>
+                            <div style="text-align: left;">
+                                <div style="font-weight: 600;">Reports</div>
+                                <div style="font-size: 0.8rem; opacity: 0.8;">Generate hostel reports</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
         `;
     }
+
+    setupWardenDashboardListeners() {
+        if (!window.firebaseService || !window.firebaseDb) {
+            const listEl = document.getElementById('warden-pending-apps-list');
+            if (listEl) listEl.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No Firestore connection. Data unavailable.</p>';
+            return;
+        }
+
+        // Listen to all applications for stats
+        window.firebaseService.listenToAllApplications((apps) => {
+            const pending = apps.filter(a => a.status === 'pending').length;
+            const approved = apps.filter(a => a.status === 'approved').length;
+            const allocated = apps.filter(a => a.status === 'allocated').length;
+            const rejected = apps.filter(a => a.status === 'rejected').length;
+
+            const el = (id) => document.getElementById(id);
+            if (el('stat-pending')) el('stat-pending').textContent = pending;
+            if (el('stat-approved')) el('stat-approved').textContent = approved;
+            if (el('stat-allocated')) el('stat-allocated').textContent = allocated;
+            if (el('stat-rejected')) el('stat-rejected').textContent = rejected;
+        });
+
+        // Listen to pending applications
+        window.firebaseService.listenToPendingApplications((apps) => {
+            const countEl = document.getElementById('warden-pending-count');
+            const listEl = document.getElementById('warden-pending-apps-list');
+            if (!listEl) return;
+
+            if (countEl) countEl.textContent = apps.length;
+
+            if (apps.length === 0) {
+                listEl.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;"><i class="fas fa-check-circle" style="color: var(--accent-green);"></i> No pending applications</p>';
+                return;
+            }
+
+            listEl.innerHTML = apps.map(app => `
+                <div style="padding: 1rem; border-bottom: 1px solid var(--border-color); background: var(--bg-secondary); border-radius: 8px; margin-bottom: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                        <div>
+                            <p style="font-weight: 600; color: var(--text-primary); margin: 0;">${app.studentName || 'Unknown Student'}</p>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0.25rem 0 0 0;">
+                                <i class="fas fa-id-card"></i> ${app.studentId || ''} &bull;
+                                <i class="fas fa-building"></i> Block ${app.hostelBlock || 'N/A'}
+                            </p>
+                        </div>
+                        <span style="background: var(--accent-orange); color: white; padding: 0.15rem 0.5rem; border-radius: 12px; font-size: 0.75rem;">Pending</span>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+                        <button class="btn btn-sm" style="flex: 1; background: var(--accent-green); color: white; border: none; padding: 0.5rem; border-radius: 6px; cursor: pointer;" onclick="app.handleApproveApplication('${app.id}')">
+                            <i class="fas fa-check"></i> Approve
+                        </button>
+                        <button class="btn btn-sm" style="flex: 1; background: var(--primary-red); color: white; border: none; padding: 0.5rem; border-radius: 6px; cursor: pointer;" onclick="app.handleRejectApplication('${app.id}')">
+                            <i class="fas fa-times"></i> Reject
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        });
+    }
+
+    // ========================
+    // APPLICATION FORM (Student)
+    // ========================
 
     async loadApplicationForm() {
         const userGender = this.currentUser?.gender;
@@ -363,109 +529,85 @@ class HostelApp {
                     <h1 style="color: white; margin-bottom: 0.5rem;"><i class="fas fa-file-alt"></i> Accommodation Application</h1>
                     <p style="color: rgba(255,255,255,0.9); margin: 0;">Complete your hostel accommodation application</p>
                 </div>
-                
+
                 <form id="applicationForm" onsubmit="app.submitApplication(event)" style="background: var(--bg-primary); padding: 2rem; border-radius: 16px; box-shadow: var(--shadow-lg);">
-                    <div class="form-grid" style="display: grid; gap: 2rem;">
-                        <!-- Personal Information -->
-                        <div class="form-section" style="background: linear-gradient(135deg, rgba(211, 47, 47, 0.05) 0%, transparent 100%); padding: 1.5rem; border-radius: 12px; border-left: 4px solid var(--primary-red);">
-                            <h3 style="color: var(--primary-red); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                                <i class="fas fa-user"></i> Personal Information
-                            </h3>
-                            <div class="form-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
-                                <div class="form-group">
-                                    <label class="form-label" style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; display: block;">Full Name</label>
-                                    <input type="text" class="form-control" value="${this.currentUser?.name || ''}" readonly style="background: var(--bg-secondary);">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label" style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; display: block;">Registration Number</label>
-                                    <input type="text" class="form-control" value="${this.currentUser?.id || ''}" readonly style="background: var(--bg-secondary);">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label" style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; display: block;">Gender</label>
-                                    <input type="text" class="form-control" value="${userGender === 'female' ? 'Female' : 'Male'}" readonly style="background: var(--bg-secondary);">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Academic Information -->
-                        <div class="form-section" style="background: linear-gradient(135deg, rgba(211, 47, 47, 0.05) 0%, transparent 100%); padding: 1.5rem; border-radius: 12px; border-left: 4px solid var(--primary-red);">
-                            <h3 style="color: var(--primary-red); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                                <i class="fas fa-graduation-cap"></i> Academic Information
-                            </h3>
-                            <div class="form-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
-                                <div class="form-group">
-                                    <label class="form-label" style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; display: block;">Program</label>
-                                    <input type="text" class="form-control" value="${this.currentUser?.program || ''}" readonly style="background: var(--bg-secondary);">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label" style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; display: block;">Year of Study</label>
-                                    <select class="form-control" required style="padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.3s ease;">
-                                        <option value="">Select Year</option>
-                                        <option value="1">Year 1</option>
-                                        <option value="2">Year 2</option>
-                                        <option value="3">Year 3</option>
-                                        <option value="4">Year 4</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Hostel Preferences -->
-                        <div class="form-section" style="background: linear-gradient(135deg, rgba(211, 47, 47, 0.05) 0%, transparent 100%); padding: 1.5rem; border-radius: 12px; border-left: 4px solid var(--primary-red);">
-                            <h3 style="color: var(--primary-red); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                                <i class="fas fa-home"></i> Hostel Preferences
-                            </h3>
+                    <!-- Personal Information (read-only) -->
+                    <div class="form-section" style="background: linear-gradient(135deg, rgba(211,47,47,0.05) 0%, transparent 100%); padding: 1.5rem; border-radius: 12px; border-left: 4px solid var(--primary-red); margin-bottom: 1.5rem;">
+                        <h3 style="color: var(--primary-red); margin-bottom: 1rem;"><i class="fas fa-user"></i> Personal Information</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
                             <div class="form-group">
-                                <label class="form-label" style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; display: block;">Preferred Block</label>
-                                <select class="form-control" id="hostelBlock" required style="padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.3s ease;">
-                                    <option value="">Select Block</option>
-                                </select>
-                                <small style="color: var(--text-secondary); margin-top: 0.5rem; display: block; font-style: italic;">
-                                    <i class="fas fa-info-circle"></i> Warden will assign specific hostel within your selected block
-                                </small>
+                                <label class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Full Name</label>
+                                <input type="text" class="form-control" value="${this.currentUser?.name || ''}" readonly style="background: var(--bg-secondary);">
                             </div>
-                            <div class="form-group" style="margin-top: 1rem;">
-                                <label class="form-label" style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; display: block;">Room Type</label>
-                                <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; border: 2px solid var(--primary-red);">
-                                    <p style="margin: 0; font-weight: 600; color: var(--primary-red);">
-                                        <i class="fas fa-bed"></i> Triple Occupancy (3 Students per Room)
-                                    </p>
-                                    <small style="color: var(--text-secondary); display: block; margin-top: 0.5rem;">All rooms are triple occupancy for both boys and girls</small>
-                                </div>
+                            <div class="form-group">
+                                <label class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Registration Number</label>
+                                <input type="text" class="form-control" value="${this.currentUser?.id || ''}" readonly style="background: var(--bg-secondary);">
                             </div>
-                        </div>
-                        
-                        <!-- Special Requirements -->
-                        <div class="form-section" style="background: linear-gradient(135deg, rgba(211, 47, 47, 0.05) 0%, transparent 100%); padding: 1.5rem; border-radius: 12px; border-left: 4px solid var(--primary-red);">
-                            <h3 style="color: var(--primary-red); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                                <i class="fas fa-star"></i> Special Requirements
-                            </h3>
-                            <div class="checkbox-group">
-                                <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; cursor: pointer; padding: 0.5rem; border-radius: 8px; transition: all 0.3s ease;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='transparent'">
-                                    <input type="checkbox" name="disability" style="width: 18px; height: 18px; cursor: pointer;">
-                                    <span>I have a disability requiring special accommodation</span>
-                                </label>
-                                <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; cursor: pointer; padding: 0.5rem; border-radius: 8px; transition: all 0.3s ease;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='transparent'">
-                                    <input type="checkbox" name="medical" style="width: 18px; height: 18px; cursor: pointer;">
-                                    <span>I have medical conditions requiring attention</span>
-                                </label>
-                                <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; cursor: pointer; padding: 0.5rem; border-radius: 8px; transition: all 0.3s ease;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='transparent'">
-                                    <input type="checkbox" name="final_year" style="width: 18px; height: 18px; cursor: pointer;">
-                                    <span>I am a final year student (priority consideration)</span>
-                                </label>
-                            </div>
-                            <div class="form-group" style="margin-top: 1rem;">
-                                <label class="form-label" style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; display: block;">Additional Notes (Optional)</label>
-                                <textarea class="form-control" rows="4" placeholder="Any additional information..." style="padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; resize: vertical;"></textarea>
+                            <div class="form-group">
+                                <label class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Gender</label>
+                                <input type="text" class="form-control" value="${userGender === 'female' ? 'Female' : 'Male'}" readonly style="background: var(--bg-secondary);">
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="form-actions" style="display: flex; gap: 1rem; margin-top: 2rem; justify-content: center;">
-                        <button type="button" class="btn btn-outline" onclick="app.loadPage('dashboard')" style="padding: 1rem 2rem; border: 2px solid var(--primary-red); background: transparent; color: var(--primary-red); border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='var(--primary-red)'; this.style.color='white'" onmouseout="this.style.background='transparent'; this.style.color='var(--primary-red)'">
-                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+
+                    <!-- Academic Information -->
+                    <div class="form-section" style="background: linear-gradient(135deg, rgba(211,47,47,0.05) 0%, transparent 100%); padding: 1.5rem; border-radius: 12px; border-left: 4px solid var(--primary-red); margin-bottom: 1.5rem;">
+                        <h3 style="color: var(--primary-red); margin-bottom: 1rem;"><i class="fas fa-graduation-cap"></i> Academic Information</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                            <div class="form-group">
+                                <label class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Program</label>
+                                <input type="text" class="form-control" value="${this.currentUser?.program || ''}" readonly style="background: var(--bg-secondary);">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Year of Study</label>
+                                <select class="form-control" id="yearOfStudy" required style="padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px;">
+                                    <option value="">Select Year</option>
+                                    <option value="1">Year 1</option>
+                                    <option value="2">Year 2</option>
+                                    <option value="3">Year 3</option>
+                                    <option value="4">Year 4</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hostel Preferences -->
+                    <div class="form-section" style="background: linear-gradient(135deg, rgba(211,47,47,0.05) 0%, transparent 100%); padding: 1.5rem; border-radius: 12px; border-left: 4px solid var(--primary-red); margin-bottom: 1.5rem;">
+                        <h3 style="color: var(--primary-red); margin-bottom: 1rem;"><i class="fas fa-home"></i> Hostel Preferences</h3>
+                        <div class="form-group">
+                            <label class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Preferred Block</label>
+                            <select class="form-control" id="hostelBlock" required style="padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px;">
+                                <option value="">Select Block</option>
+                            </select>
+                            <small style="color: var(--text-secondary); margin-top: 0.5rem; display: block;">
+                                <i class="fas fa-info-circle"></i> Warden will assign a specific room within your selected block
+                            </small>
+                        </div>
+                        <div class="form-group" style="margin-top: 1rem;">
+                            <label class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Room Type</label>
+                            <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; border: 2px solid var(--primary-red);">
+                                <p style="margin: 0; font-weight: 600; color: var(--primary-red);">
+                                    <i class="fas fa-bed"></i> Triple Occupancy (3 Students per Room)
+                                </p>
+                                <small style="color: var(--text-secondary);">All rooms are triple occupancy</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Notes -->
+                    <div class="form-section" style="background: linear-gradient(135deg, rgba(211,47,47,0.05) 0%, transparent 100%); padding: 1.5rem; border-radius: 12px; border-left: 4px solid var(--primary-red); margin-bottom: 1.5rem;">
+                        <h3 style="color: var(--primary-red); margin-bottom: 1rem;"><i class="fas fa-star"></i> Additional Information</h3>
+                        <div class="form-group">
+                            <label class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Notes (Optional)</label>
+                            <textarea class="form-control" id="applicationNotes" rows="3" placeholder="Any special requirements or notes..." style="padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; resize: vertical;"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-actions" style="display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: center;">
+                        <button type="button" class="btn btn-outline" onclick="app.loadPage('dashboard')" style="padding: 1rem 2rem; border: 2px solid var(--primary-red); background: transparent; color: var(--primary-red); border-radius: 8px; font-weight: 600; cursor: pointer;">
+                            <i class="fas fa-arrow-left"></i> Back
                         </button>
-                        <button type="submit" class="btn btn-primary" style="padding: 1rem 2rem; background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-dark) 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(211, 47, 47, 0.3); transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(211, 47, 47, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(211, 47, 47, 0.3)'">
+                        <button type="submit" class="btn btn-primary" style="padding: 1rem 2rem; background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-dark) 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
                             <i class="fas fa-paper-plane"></i> Submit Application
                         </button>
                     </div>
@@ -474,102 +616,472 @@ class HostelApp {
         `;
     }
 
-    async loadLoginPage() {
+    async submitApplication(e) {
+        e.preventDefault();
+
+        const yearOfStudy = document.getElementById('yearOfStudy')?.value;
+        const hostelBlock = document.getElementById('hostelBlock')?.value;
+        const notes = document.getElementById('applicationNotes')?.value || '';
+
+        if (!yearOfStudy || !hostelBlock) {
+            this.showToast('Please fill in all required fields.', 'error');
+            return;
+        }
+
+        const applicationData = {
+            studentId: this.currentUser?.id || '',
+            studentName: this.currentUser?.name || '',
+            studentEmail: this.currentUser?.email || '',
+            gender: this.currentUser?.gender || '',
+            program: this.currentUser?.program || '',
+            yearOfStudy: yearOfStudy,
+            hostelBlock: hostelBlock,
+            notes: notes,
+            roomType: 'triple'
+        };
+
+        if (window.firebaseService && window.firebaseDb) {
+            try {
+                await window.firebaseService.submitApplication(applicationData);
+                this.showToast('Application submitted successfully! The warden will review it shortly.', 'success');
+                setTimeout(() => this.loadPage('status'), 1500);
+            } catch (error) {
+                console.error('Error submitting application:', error);
+                this.showToast('Failed to submit application: ' + error.message, 'error');
+            }
+        } else {
+            // localStorage fallback
+            const apps = JSON.parse(localStorage.getItem('applications') || '[]');
+            apps.push({
+                id: 'app-' + Date.now(),
+                ...applicationData,
+                status: 'pending',
+                submittedAt: new Date().toISOString()
+            });
+            localStorage.setItem('applications', JSON.stringify(apps));
+            this.showToast('Application submitted successfully!', 'success');
+            setTimeout(() => this.loadPage('status'), 1500);
+        }
+    }
+
+    // ========================
+    // APPLICATION STATUS (Student)
+    // ========================
+
+    async loadApplicationStatus() {
+        const studentId = this.currentUser?.id || '';
+
+        setTimeout(() => this.setupApplicationStatusListeners(studentId), 300);
+
         return `
-            <div class="login-container fade-in">
-                <div class="login-card">
-                    <div class="login-header">
-                        <h1><i class="fas fa-hotel"></i> AU Hostel Login</h1>
-                        <p>Welcome to African University Hostel Accommodation System</p>
-                    </div>
-                    
-                    <div class="login-tabs">
-                        <button class="tab-btn active" onclick="app.switchTab('login')">Login</button>
-                        <button class="tab-btn" onclick="app.switchTab('register')">Register</button>
-                    </div>
-                    
-                    <div id="loginForm" class="auth-form">
-                        <form onsubmit="app.handleLogin(event)">
-                            <div class="form-group">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" required>
+            <div class="fade-in" style="max-width: 900px; margin: 0 auto;">
+                <div style="text-align: center; margin-bottom: 2rem; background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-dark) 100%); padding: 2rem; border-radius: 16px; color: white;">
+                    <h1 style="color: white; margin-bottom: 0.5rem;"><i class="fas fa-history"></i> Application Status</h1>
+                    <p style="color: rgba(255,255,255,0.9); margin: 0;">Track your accommodation application progress</p>
+                </div>
+                <div id="application-status-list">
+                    <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading your applications...
+                    </p>
+                </div>
+            </div>
+        `;
+    }
+
+    setupApplicationStatusListeners(studentId) {
+        if (!window.firebaseService || !window.firebaseDb) {
+            const container = document.getElementById('application-status-list');
+            if (container) {
+                // Check localStorage fallback
+                const apps = JSON.parse(localStorage.getItem('applications') || '[]')
+                    .filter(a => a.studentId === studentId);
+                this.renderApplicationStatusList(apps);
+            }
+            return;
+        }
+
+        window.firebaseService.listenToApplications(studentId, (apps) => {
+            this.renderApplicationStatusList(apps);
+        });
+    }
+
+    renderApplicationStatusList(applications) {
+        const container = document.getElementById('application-status-list');
+        if (!container) return;
+
+        if (applications.length === 0) {
+            container.innerHTML = `
+                <div class="glass-panel" style="text-align: center; padding: 3rem;">
+                    <i class="fas fa-folder-open" style="font-size: 3rem; color: var(--text-secondary); margin-bottom: 1rem;"></i>
+                    <h3 style="color: var(--text-primary);">No Applications Found</h3>
+                    <p style="color: var(--text-secondary);">You haven't submitted any accommodation applications yet.</p>
+                    <button class="btn btn-primary futuristic" onclick="app.loadPage('apply')" style="margin-top: 1rem;">
+                        <i class="fas fa-edit"></i> Apply Now
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = applications.map((app, index) => {
+            const statusColor = app.status === 'approved' || app.status === 'allocated' ? 'var(--accent-green)' :
+                               app.status === 'rejected' ? 'var(--primary-red)' : 'var(--accent-orange)';
+            const statusIcon = app.status === 'approved' || app.status === 'allocated' ? 'check-circle' :
+                              app.status === 'rejected' ? 'times-circle' : 'clock';
+            const date = app.submittedAt?.toDate ? app.submittedAt.toDate().toLocaleDateString() :
+                        app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : 'Recently';
+
+            return `
+                <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 1rem; border-left: 4px solid ${statusColor};">
+                    <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                                <i class="fas fa-${statusIcon}" style="font-size: 1.5rem; color: ${statusColor};"></i>
+                                <h3 style="color: var(--text-primary); margin: 0;">Application #${index + 1}</h3>
+                                <span style="background: ${statusColor}; color: white; padding: 0.2rem 0.75rem; border-radius: 12px; font-size: 0.8rem; text-transform: uppercase;">${app.status}</span>
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">Password</label>
-                                <input type="password" class="form-control" required>
+                            <p style="color: var(--text-secondary); margin: 0.25rem 0;"><i class="fas fa-building"></i> Preferred Block: ${app.hostelBlock || 'N/A'}</p>
+                            <p style="color: var(--text-secondary); margin: 0.25rem 0;"><i class="fas fa-calendar"></i> Submitted: ${date}</p>
+                            <p style="color: var(--text-secondary); margin: 0.25rem 0;"><i class="fas fa-graduation-cap"></i> Year: ${app.yearOfStudy || 'N/A'}</p>
+                        </div>
+                        ${app.status === 'allocated' && app.allocatedRoom ? `
+                            <div style="background: rgba(76,175,80,0.1); padding: 1rem; border-radius: 8px; text-align: center;">
+                                <p style="font-weight: 600; color: var(--accent-green); margin: 0;"><i class="fas fa-door-open"></i> Room Assigned</p>
+                                <p style="font-size: 1.5rem; font-weight: 700; color: var(--accent-green); margin: 0.5rem 0 0;">${app.allocatedRoom}</p>
                             </div>
-                            <button type="submit" class="btn btn-primary btn-block">
-                                <i class="fas fa-sign-in-alt"></i> Login
+                        ` : ''}
+                        ${app.status === 'rejected' ? `
+                            <div style="background: rgba(211,47,47,0.1); padding: 1rem; border-radius: 8px;">
+                                <p style="font-weight: 600; color: var(--primary-red); margin: 0;"><i class="fas fa-exclamation-triangle"></i> Reason</p>
+                                <p style="color: var(--text-secondary); margin: 0.5rem 0 0; font-size: 0.9rem;">${app.rejectionReason || 'Not specified'}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ========================
+    // APPLICATIONS PAGE (Warden)
+    // ========================
+
+    async loadApplicationsPage() {
+        if (!this.currentUser || (this.currentUser.role !== 'warden' && this.currentUser.role !== 'admin')) {
+            return this.accessDeniedHTML();
+        }
+
+        setTimeout(() => this.setupApplicationsPageListeners(), 300);
+
+        return `
+            <div class="fade-in">
+                <div style="text-align: center; margin-bottom: 2rem; background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-dark) 100%); padding: 2rem; border-radius: 16px; color: white;">
+                    <h1 style="color: white;"><i class="fas fa-clipboard-list"></i> Applications Management</h1>
+                    <p style="color: rgba(255,255,255,0.9); margin: 0;">Review and process student accommodation applications</p>
+                </div>
+
+                <!-- Filter Bar -->
+                <div class="glass-panel" style="padding: 1rem; margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <select id="appStatusFilter" onchange="app.filterApplications()" style="padding: 0.5rem 1rem; border: 2px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary);">
+                        <option value="all">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="allocated">Allocated</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                    <span id="apps-total-count" style="color: var(--text-secondary); margin-left: auto;">Loading...</span>
+                </div>
+
+                <div id="all-applications-list">
+                    <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading applications...
+                    </p>
+                </div>
+            </div>
+        `;
+    }
+
+    setupApplicationsPageListeners() {
+        if (!window.firebaseService || !window.firebaseDb) return;
+
+        window.firebaseService.listenToAllApplications((apps) => {
+            this._allApplications = apps;
+            this.filterApplications();
+        });
+    }
+
+    filterApplications() {
+        const filter = document.getElementById('appStatusFilter')?.value || 'all';
+        const apps = this._allApplications || [];
+        const filtered = filter === 'all' ? apps : apps.filter(a => a.status === filter);
+
+        const countEl = document.getElementById('apps-total-count');
+        if (countEl) countEl.textContent = `Showing ${filtered.length} of ${apps.length} applications`;
+
+        const container = document.getElementById('all-applications-list');
+        if (!container) return;
+
+        if (filtered.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No applications found.</p>';
+            return;
+        }
+
+        container.innerHTML = filtered.map(app => {
+            const statusColor = app.status === 'approved' || app.status === 'allocated' ? 'var(--accent-green)' :
+                               app.status === 'rejected' ? 'var(--primary-red)' : 'var(--accent-orange)';
+            const date = app.submittedAt?.toDate ? app.submittedAt.toDate().toLocaleDateString() :
+                        app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : 'Recently';
+
+            return `
+                <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 0.75rem; border-left: 4px solid ${statusColor};">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h4 style="color: var(--text-primary); margin: 0 0 0.25rem 0;">${app.studentName || 'Unknown'}</h4>
+                            <p style="color: var(--text-secondary); margin: 0; font-size: 0.9rem;">
+                                <i class="fas fa-id-card"></i> ${app.studentId || 'N/A'} &bull;
+                                <i class="fas fa-building"></i> Block ${app.hostelBlock || 'N/A'} &bull;
+                                <i class="fas fa-calendar"></i> ${date} &bull;
+                                <i class="fas fa-venus-mars"></i> ${app.gender || 'N/A'}
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <span style="background: ${statusColor}; color: white; padding: 0.2rem 0.75rem; border-radius: 12px; font-size: 0.8rem; text-transform: uppercase;">${app.status}</span>
+                            ${app.status === 'pending' ? `
+                                <button class="btn btn-sm" style="background: var(--accent-green); color: white; border: none; padding: 0.4rem 0.75rem; border-radius: 6px; cursor: pointer;" onclick="app.handleApproveApplication('${app.id}')">
+                                    <i class="fas fa-check"></i> Approve
+                                </button>
+                                <button class="btn btn-sm" style="background: var(--primary-red); color: white; border: none; padding: 0.4rem 0.75rem; border-radius: 6px; cursor: pointer;" onclick="app.handleRejectApplication('${app.id}')">
+                                    <i class="fas fa-times"></i> Reject
+                                </button>
+                            ` : ''}
+                            ${app.status === 'approved' ? `
+                                <button class="btn btn-sm" style="background: var(--accent-blue); color: white; border: none; padding: 0.4rem 0.75rem; border-radius: 6px; cursor: pointer;" onclick="app.loadPage('allocation')">
+                                    <i class="fas fa-bed"></i> Allocate Room
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ========================
+    // ROOM ALLOCATION (Warden)
+    // ========================
+
+    async loadAllocationPage() {
+        if (!this.currentUser || (this.currentUser.role !== 'warden' && this.currentUser.role !== 'admin')) {
+            return this.accessDeniedHTML();
+        }
+
+        setTimeout(() => this.setupAllocationPageListeners(), 300);
+
+        return `
+            <div class="fade-in">
+                <div style="text-align: center; margin-bottom: 2rem; background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-dark) 100%); padding: 2rem; border-radius: 16px; color: white;">
+                    <h1 style="color: white;"><i class="fas fa-bed"></i> Room Allocation</h1>
+                    <p style="color: rgba(255,255,255,0.9); margin: 0;">Assign rooms to approved students</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                    <!-- Allocation Form -->
+                    <div class="glass-panel" style="padding: 2rem;">
+                        <h3 style="color: var(--text-primary); margin-bottom: 1.5rem;"><i class="fas fa-plus-circle" style="color: var(--primary-red);"></i> Allocate Room</h3>
+                        <form id="allocationForm" onsubmit="app.handleAllocation(event)">
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label style="font-weight: 600; display: block; margin-bottom: 0.5rem; color: var(--text-primary);">Select Approved Student</label>
+                                <select id="allocStudentSelect" class="form-control" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary);">
+                                    <option value="">Loading approved students...</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label style="font-weight: 600; display: block; margin-bottom: 0.5rem; color: var(--text-primary);">Select Room</label>
+                                <select id="allocRoomSelect" class="form-control" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary);">
+                                    <option value="">Loading available rooms...</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary futuristic" style="width: 100%; padding: 0.75rem; margin-top: 0.5rem;">
+                                <i class="fas fa-check"></i> Allocate Room
                             </button>
                         </form>
                     </div>
-                    
-                    <div id="registerForm" class="auth-form hidden">
-                        <form onsubmit="app.handleRegister(event)">
-                            <div class="form-group">
-                                <label class="form-label">Full Name</label>
-                                <input type="text" class="form-control" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Password</label>
-                                <input type="password" class="form-control" required minlength="6">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Confirm Password</label>
-                                <input type="password" class="form-control" required minlength="6">
-                            </div>
-                            <button type="submit" class="btn btn-primary btn-block">
-                                <i class="fas fa-user-plus"></i> Register
-                            </button>
-                        </form>
+
+                    <!-- Current Allocations -->
+                    <div class="glass-panel" style="padding: 2rem;">
+                        <h3 style="color: var(--text-primary); margin-bottom: 1.5rem;"><i class="fas fa-list" style="color: var(--accent-blue);"></i> Current Allocations</h3>
+                        <div id="current-allocations-list" style="max-height: 400px; overflow-y: auto;">
+                            <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">
+                                <i class="fas fa-spinner fa-spin"></i> Loading...
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
         `;
     }
 
+    setupAllocationPageListeners() {
+        if (!window.firebaseService || !window.firebaseDb) return;
+
+        // Load approved students into dropdown
+        window.firebaseService.listenToAllApplications((apps) => {
+            const approved = apps.filter(a => a.status === 'approved');
+            const select = document.getElementById('allocStudentSelect');
+            if (!select) return;
+
+            select.innerHTML = '<option value="">Choose a student...</option>';
+            approved.forEach(app => {
+                select.innerHTML += `<option value="${app.id}" data-student-id="${app.studentId}" data-student-name="${app.studentName}" data-block="${app.hostelBlock}" data-gender="${app.gender}">${app.studentName} (${app.studentId}) - Block ${app.hostelBlock}</option>`;
+            });
+
+            if (approved.length === 0) {
+                select.innerHTML = '<option value="">No approved students available</option>';
+            }
+        });
+
+        // Load available rooms into dropdown
+        window.firebaseService.listenToRooms((rooms) => {
+            this._allRooms = rooms;
+            const available = rooms.filter(r => r.occupied < r.capacity);
+            const select = document.getElementById('allocRoomSelect');
+            if (!select) return;
+
+            select.innerHTML = '<option value="">Choose a room...</option>';
+            available.forEach(room => {
+                const spots = room.capacity - room.occupied;
+                select.innerHTML += `<option value="${room.id}" data-number="${room.number}" data-block="${room.block}" data-condition="${room.condition || 'Good'}" data-capacity="${room.capacity}" data-amenities='${JSON.stringify(room.amenities || [])}'>Room ${room.number} - Block ${room.block} (${spots} bed${spots > 1 ? 's' : ''} available)</option>`;
+            });
+        });
+
+        // Load current allocations
+        window.firebaseService.listenToAllocations((allocations) => {
+            const container = document.getElementById('current-allocations-list');
+            if (!container) return;
+
+            if (allocations.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No allocations yet.</p>';
+                return;
+            }
+
+            const active = allocations.filter(a => a.status === 'active');
+            container.innerHTML = active.map(alloc => `
+                <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <p style="font-weight: 600; color: var(--text-primary); margin: 0;">${alloc.studentName || alloc.studentId}</p>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0.25rem 0 0 0;">Room ${alloc.roomNumber || alloc.roomId} - Block ${alloc.block || ''}</p>
+                    </div>
+                    <span style="background: var(--accent-green); color: white; padding: 0.15rem 0.5rem; border-radius: 12px; font-size: 0.75rem;">Active</span>
+                </div>
+            `).join('');
+        });
+    }
+
+    async handleAllocation(e) {
+        e.preventDefault();
+
+        const studentSelect = document.getElementById('allocStudentSelect');
+        const roomSelect = document.getElementById('allocRoomSelect');
+
+        const applicationId = studentSelect.value;
+        const roomId = roomSelect.value;
+
+        if (!applicationId || !roomId) {
+            this.showToast('Please select both a student and a room.', 'error');
+            return;
+        }
+
+        const selectedStudent = studentSelect.selectedOptions[0];
+        const selectedRoom = roomSelect.selectedOptions[0];
+
+        const allocationData = {
+            applicationId: applicationId,
+            studentId: selectedStudent.dataset.studentId || '',
+            studentName: selectedStudent.dataset.studentName || '',
+            roomId: roomId,
+            roomNumber: selectedRoom.dataset.number || '',
+            block: selectedRoom.dataset.block || '',
+            hostelBlock: selectedRoom.dataset.block || '',
+            roomCondition: selectedRoom.dataset.condition || 'Good',
+            roomCapacity: parseInt(selectedRoom.dataset.capacity) || 3,
+            amenities: JSON.parse(selectedRoom.dataset.amenities || '[]'),
+            allocatedBy: this.currentUser?.id || ''
+        };
+
+        if (window.firebaseService && window.firebaseDb) {
+            try {
+                await window.firebaseService.allocateRoom(allocationData);
+                this.showToast(`Room ${allocationData.roomNumber} allocated to ${allocationData.studentName}!`, 'success');
+                e.target.reset();
+            } catch (error) {
+                console.error('Allocation error:', error);
+                this.showToast('Allocation failed: ' + error.message, 'error');
+            }
+        } else {
+            this.showToast('Firestore not available. Cannot allocate rooms.', 'error');
+        }
+    }
+
+    // ========================
+    // WARDEN: APPROVE / REJECT
+    // ========================
+
+    async handleApproveApplication(applicationId) {
+        if (!confirm('Approve this application?')) return;
+
+        if (window.firebaseService && window.firebaseDb) {
+            try {
+                await window.firebaseService.approveApplication(applicationId, this.currentUser?.id || '');
+                this.showToast('Application approved!', 'success');
+            } catch (error) {
+                this.showToast('Failed to approve: ' + error.message, 'error');
+            }
+        }
+    }
+
+    async handleRejectApplication(applicationId) {
+        const reason = prompt('Please provide a reason for rejection:');
+        if (reason === null) return; // cancelled
+
+        if (window.firebaseService && window.firebaseDb) {
+            try {
+                await window.firebaseService.rejectApplication(applicationId, this.currentUser?.id || '', reason);
+                this.showToast('Application rejected.', 'warning');
+            } catch (error) {
+                this.showToast('Failed to reject: ' + error.message, 'error');
+            }
+        }
+    }
+
+    // ========================
+    // VIEW ROOMS (Both roles)
+    // ========================
+
     async loadRoomView() {
         const userGender = this.currentUser?.gender;
-        const userRole = this.currentUser?.role || 'student';
-        
-        // Generate mock rooms data
         const rooms = this.generateRoomsData(userGender);
-        
+
         return `
             <div class="room-explorer-container fade-in">
-                <!-- Hero Header -->
-                <div class="room-explorer-hero" style="background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-dark) 100%); padding: 3rem 2rem; border-radius: 20px; text-align: center; color: white; margin-bottom: 2rem; box-shadow: var(--shadow-lg);">
+                <div style="background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-dark) 100%); padding: 3rem 2rem; border-radius: 20px; text-align: center; color: white; margin-bottom: 2rem;">
                     <h1 style="color: white; font-size: 2.5rem; margin-bottom: 1rem;">
-                        <i class="fas fa-building"></i> Interactive Room Explorer
+                        <i class="fas fa-building"></i> Room Explorer
                     </h1>
-                    <p style="font-size: 1.2rem; opacity: 0.9; margin: 0;">
-                        Explore available rooms with real-time 3D visualization
-                    </p>
+                    <p style="font-size: 1.2rem; opacity: 0.9; margin: 0;">Browse available rooms and view occupancy</p>
                 </div>
 
-                <!-- Filter Controls -->
-                <div class="room-filters" style="background: var(--bg-primary); padding: 1.5rem; border-radius: 16px; margin-bottom: 2rem; box-shadow: var(--shadow-md);">
+                <!-- Filters -->
+                <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 2rem;">
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
                         <div>
-                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">
-                                <i class="fas fa-building"></i> Block
-                            </label>
+                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);"><i class="fas fa-building"></i> Block</label>
                             <select id="blockFilter" onchange="app.filterRoomsByBlock()" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary);">
                                 <option value="all">All Blocks</option>
-                                ${userGender === 'female' ? 
-                                    ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(b => `<option value="${b}">Block ${b}</option>`).join('') :
-                                    ['I', 'J', 'K', 'L'].map(b => `<option value="${b}">Block ${b}</option>`).join('')
-                                }
+                                ${(userGender === 'female' ? ['A','B','C','D','E','F','G','H'] : ['I','J','K','L']).map(b => `<option value="${b}">Block ${b}</option>`).join('')}
                             </select>
                         </div>
                         <div>
-                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">
-                                <i class="fas fa-door-open"></i> Availability
-                            </label>
+                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);"><i class="fas fa-door-open"></i> Availability</label>
                             <select id="availabilityFilter" onchange="app.filterRoomsByBlock()" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary);">
                                 <option value="all">All Rooms</option>
                                 <option value="available">Available Only</option>
@@ -577,777 +1089,192 @@ class HostelApp {
                             </select>
                         </div>
                         <div>
-                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">
-                                <i class="fas fa-sort"></i> Sort By
-                            </label>
-                            <select id="sortFilter" onchange="app.filterRoomsByBlock()" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary);">
-                                <option value="room">Room Number</option>
-                                <option value="availability">Availability</option>
-                                <option value="block">Block</option>
-                            </select>
-                        </div>
-                        <div>
-                            <button onclick="app.resetRoomFilters()" class="btn btn-outline" style="width: 100%; padding: 0.75rem; border: 2px solid var(--primary-red); background: transparent; color: var(--primary-red); border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='var(--primary-red)'; this.style.color='white'" onmouseout="this.style.background='transparent'; this.style.color='var(--primary-red)'">
+                            <button onclick="app.resetRoomFilters()" style="width: 100%; padding: 0.75rem; border: 2px solid var(--primary-red); background: transparent; color: var(--primary-red); border-radius: 8px; font-weight: 600; cursor: pointer;">
                                 <i class="fas fa-redo"></i> Reset
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Stats Overview -->
-                <div class="room-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-                    <div class="stat-card-3d" style="background: linear-gradient(135deg, var(--accent-green) 0%, #388E3C 100%); color: white; padding: 1.5rem; border-radius: 16px; box-shadow: var(--shadow-md); transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-5px) rotateX(5deg)'" onmouseout="this.style.transform='translateY(0) rotateX(0)'">
-                        <div style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;">${rooms.filter(r => r.available > 0).length}</div>
-                        <div style="opacity: 0.9;"><i class="fas fa-door-open"></i> Available Rooms</div>
+                <!-- Stats -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                    <div style="background: linear-gradient(135deg, var(--accent-green) 0%, #388E3C 100%); color: white; padding: 1.5rem; border-radius: 16px; text-align: center;">
+                        <div style="font-size: 2rem; font-weight: 700;">${rooms.filter(r => r.available > 0).length}</div>
+                        <div><i class="fas fa-door-open"></i> Available</div>
                     </div>
-                    <div class="stat-card-3d" style="background: linear-gradient(135deg, var(--accent-blue) 0%, #1976D2 100%); color: white; padding: 1.5rem; border-radius: 16px; box-shadow: var(--shadow-md); transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-5px) rotateX(5deg)'" onmouseout="this.style.transform='translateY(0) rotateX(0)'">
-                        <div style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;">${rooms.reduce((sum, r) => sum + r.available, 0)}</div>
-                        <div style="opacity: 0.9;"><i class="fas fa-bed"></i> Total Beds Available</div>
+                    <div style="background: linear-gradient(135deg, var(--accent-blue) 0%, #1976D2 100%); color: white; padding: 1.5rem; border-radius: 16px; text-align: center;">
+                        <div style="font-size: 2rem; font-weight: 700;">${rooms.reduce((s,r) => s + r.available, 0)}</div>
+                        <div><i class="fas fa-bed"></i> Beds Available</div>
                     </div>
-                    <div class="stat-card-3d" style="background: linear-gradient(135deg, var(--accent-orange) 0%, #F57C00 100%); color: white; padding: 1.5rem; border-radius: 16px; box-shadow: var(--shadow-md); transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-5px) rotateX(5deg)'" onmouseout="this.style.transform='translateY(0) rotateX(0)'">
-                        <div style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;">${Math.round((rooms.reduce((sum, r) => sum + r.occupied, 0) / rooms.reduce((sum, r) => sum + r.capacity, 0)) * 100)}%</div>
-                        <div style="opacity: 0.9;"><i class="fas fa-chart-pie"></i> Occupancy Rate</div>
+                    <div style="background: linear-gradient(135deg, var(--accent-orange) 0%, #F57C00 100%); color: white; padding: 1.5rem; border-radius: 16px; text-align: center;">
+                        <div style="font-size: 2rem; font-weight: 700;">${Math.round((rooms.reduce((s,r) => s+r.occupied,0) / rooms.reduce((s,r) => s+r.capacity,0))*100)}%</div>
+                        <div><i class="fas fa-chart-pie"></i> Occupancy</div>
                     </div>
-                    <div class="stat-card-3d" style="background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-dark) 100%); color: white; padding: 1.5rem; border-radius: 16px; box-shadow: var(--shadow-md); transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-5px) rotateX(5deg)'" onmouseout="this.style.transform='translateY(0) rotateX(0)'">
-                        <div style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;">${rooms.length}</div>
-                        <div style="opacity: 0.9;"><i class="fas fa-home"></i> Total Rooms</div>
+                    <div style="background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-dark) 100%); color: white; padding: 1.5rem; border-radius: 16px; text-align: center;">
+                        <div style="font-size: 2rem; font-weight: 700;">${rooms.length}</div>
+                        <div><i class="fas fa-home"></i> Total Rooms</div>
                     </div>
                 </div>
 
-                <!-- 3D Room Grid -->
-                <div id="roomsGrid" class="rooms-3d-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;">
+                <!-- Room Grid -->
+                <div id="roomsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
                     ${rooms.map(room => this.generateRoomCard3D(room)).join('')}
                 </div>
 
                 <!-- Room Details Modal -->
-                <div id="roomModal" class="room-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(5px);" onclick="if(event.target.id==='roomModal') app.closeRoomModal()">
-                    <div class="room-modal-content" style="background: var(--bg-primary); border-radius: 20px; padding: 2rem; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: slideUp 0.3s ease;">
+                <div id="roomModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(5px);" onclick="if(event.target.id==='roomModal') app.closeRoomModal()">
+                    <div style="background: var(--bg-primary); border-radius: 20px; padding: 2rem; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
                         <div id="roomModalBody"></div>
                     </div>
                 </div>
             </div>
 
             <style>
-                @keyframes slideUp {
-                    from { opacity: 0; transform: translateY(50px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                
-                .room-card-3d {
-                    perspective: 1000px;
-                    transform-style: preserve-3d;
-                }
-                
-                .room-card-inner {
-                    transition: transform 0.6s;
-                    transform-style: preserve-3d;
-                }
-                
-                .room-card-3d:hover .room-card-inner {
-                    transform: rotateY(5deg) translateY(-10px);
-                }
-                
-                .bed-icon {
-                    display: inline-block;
-                    width: 30px;
-                    height: 30px;
-                    margin: 0.25rem;
-                    border-radius: 6px;
-                    transition: all 0.3s ease;
-                }
-                
-                .bed-icon.occupied {
-                    background: var(--primary-red);
-                    box-shadow: 0 2px 8px rgba(211, 47, 47, 0.4);
-                }
-                
-                .bed-icon.available {
-                    background: var(--accent-green);
-                    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
-                }
-                
-                .bed-icon:hover {
-                    transform: scale(1.2) rotate(5deg);
-                }
+                .bed-icon { display: inline-block; width: 30px; height: 30px; margin: 0.25rem; border-radius: 6px; }
+                .bed-icon.occupied { background: var(--primary-red); box-shadow: 0 2px 8px rgba(211,47,47,0.4); }
+                .bed-icon.available { background: var(--accent-green); box-shadow: 0 2px 8px rgba(76,175,80,0.4); }
             </style>
         `;
     }
 
-    // Utility Methods
+    // ========================
+    // REPORTS (Warden)
+    // ========================
+
+    async loadReportsPage() {
+        if (!this.currentUser || (this.currentUser.role !== 'warden' && this.currentUser.role !== 'admin')) {
+            return this.accessDeniedHTML();
+        }
+
+        return `
+            <div class="fade-in">
+                <div style="text-align: center; margin-bottom: 2rem; background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-dark) 100%); padding: 2rem; border-radius: 16px; color: white;">
+                    <h1 style="color: white;"><i class="fas fa-chart-bar"></i> Reports & Analytics</h1>
+                    <p style="color: rgba(255,255,255,0.9); margin: 0;">Generate reports and view hostel statistics</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+                    <div class="glass-panel" style="padding: 2rem; text-align: center;">
+                        <i class="fas fa-users" style="font-size: 3rem; color: var(--accent-blue); margin-bottom: 1rem;"></i>
+                        <h3 style="color: var(--text-primary);">Occupancy Report</h3>
+                        <p style="color: var(--text-secondary);">Current room occupancy across all hostels</p>
+                        <button class="btn btn-primary futuristic" onclick="app.showToast('Report generation coming soon!', 'info')" style="margin-top: 1rem;">Generate</button>
+                    </div>
+                    <div class="glass-panel" style="padding: 2rem; text-align: center;">
+                        <i class="fas fa-chart-line" style="font-size: 3rem; color: var(--accent-green); margin-bottom: 1rem;"></i>
+                        <h3 style="color: var(--text-primary);">Application Trends</h3>
+                        <p style="color: var(--text-secondary);">Monthly application submission trends</p>
+                        <button class="btn btn-primary futuristic" onclick="app.showToast('Report generation coming soon!', 'info')" style="margin-top: 1rem;">Generate</button>
+                    </div>
+                    <div class="glass-panel" style="padding: 2rem; text-align: center;">
+                        <i class="fas fa-tools" style="font-size: 3rem; color: var(--accent-orange); margin-bottom: 1rem;"></i>
+                        <h3 style="color: var(--text-primary);">Maintenance Report</h3>
+                        <p style="color: var(--text-secondary);">Room maintenance and condition reports</p>
+                        <button class="btn btn-primary futuristic" onclick="app.showToast('Report generation coming soon!', 'info')" style="margin-top: 1rem;">Generate</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // ========================
+    // HELPERS & UTILITIES
+    // ========================
+
+    accessDeniedHTML() {
+        return `
+            <div style="text-align: center; padding: 4rem 2rem;">
+                <i class="fas fa-lock" style="font-size: 4rem; color: var(--primary-red); margin-bottom: 1rem;"></i>
+                <h2 style="color: var(--text-primary);">Access Denied</h2>
+                <p style="color: var(--text-secondary);">You don't have permission to access this page.</p>
+                <button class="btn btn-primary futuristic" onclick="app.loadPage('dashboard')" style="margin-top: 1rem;">Go to Dashboard</button>
+            </div>
+        `;
+    }
+
     showLoading() {
-        this.loadingSpinner.style.display = 'flex';
+        if (this.loadingSpinner) this.loadingSpinner.style.display = 'flex';
     }
 
     hideLoading() {
-        this.loadingSpinner.style.display = 'none';
+        if (this.loadingSpinner) this.loadingSpinner.style.display = 'none';
     }
 
     showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
         toast.innerHTML = `
-            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
             <span>${message}</span>
         `;
-        
-        document.getElementById('toastContainer').appendChild(toast);
-        
-        setTimeout(() => {
-            toast.remove();
-        }, 3000);
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
     }
 
     showError(message) {
         this.showToast(message, 'error');
     }
 
-    // Placeholder methods for functionality
-    submitApplication(e) {
-        e.preventDefault();
-        this.showToast('Application submitted successfully!', 'success');
-        setTimeout(() => this.loadPage('dashboard'), 1500);
-    }
-
-    filterRooms() {
-        // Placeholder for room filtering functionality
-        this.showToast('Filters applied!', 'success');
-    }
-
-    contactWarden() {
-        this.showToast('Opening contact form...', 'info');
-    }
-
-    viewHostelRules() {
-        this.showToast('Loading hostel rules...', 'info');
-    }
-
-    generateReports() {
-        this.showToast('Reports feature coming soon!', 'info');
-    }
-
-    manageHostels() {
-        this.showToast('Hostel management feature coming soon!', 'info');
-    }
-
-    viewStudents() {
-        this.showToast('Student management feature coming soon!', 'info');
-    }
-
-    systemSettings() {
-        this.showToast('System settings feature coming soon!', 'info');
-    }
-
-    switchTab(tab) {
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelectorAll('.auth-form').forEach(form => form.classList.add('hidden'));
-        
-        document.querySelector(`[onclick="app.switchTab('${tab}')"]`).classList.add('active');
-        document.getElementById(`${tab}Form`).classList.remove('hidden');
-    }
-
-    async handleLogin(e) {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const email = formData.get('email');
-        const password = formData.get('password');
-        
-        const result = await authManager.signIn(email, password);
-        if (result.success) {
-            this.showToast('Login successful!', 'success');
-        } else {
-            this.showError(result.error);
-        }
-    }
-
-    async handleRegister(e) {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const name = formData.get('name');
-        const email = formData.get('email');
-        const password = formData.get('password');
-        const confirmPassword = formData.get('confirmPassword');
-        
-        if (password !== confirmPassword) {
-            this.showError('Passwords do not match');
-            return;
-        }
-        
-        const result = await authManager.signUp(email, password, { name, email });
-        if (result.success) {
-            this.showToast('Registration successful!', 'success');
-        } else {
-            this.showError(result.error);
-        }
-    }
-
-    async loadAllocationPage() {
-        // Check if user has permission
-        if (!this.currentUser || (this.currentUser.role !== 'warden' && this.currentUser.role !== 'admin')) {
-            return `
-                <div class="error-container">
-                    <h2><i class="fas fa-lock"></i> Access Denied</h2>
-                    <p>You don't have permission to access the room allocation page.</p>
-                    <button class="btn btn-primary" onclick="app.loadPage('dashboard')">Go to Dashboard</button>
-                </div>
-            `;
-        }
-
-        // Load the allocation page content
-        try {
-            const response = await fetch('pages/allocation.html');
-            const html = await response.text();
-            return html;
-        } catch (error) {
-            console.error('Error loading allocation page:', error);
-            return `
-                <div class="error-container">
-                    <h2><i class="fas fa-exclamation-triangle"></i> Error</h2>
-                    <p>Failed to load the allocation page. Please try again.</p>
-                    <button class="btn btn-primary" onclick="app.loadPage('dashboard')">Go to Dashboard</button>
-                </div>
-            `;
-        }
-    }
-
-    async loadApplicationsPage() {
-        // Check if user has permission
-        if (!this.currentUser || (this.currentUser.role !== 'warden' && this.currentUser.role !== 'admin')) {
-            return `
-                <div class="error-container">
-                    <h2><i class="fas fa-lock"></i> Access Denied</h2>
-                    <p>You don't have permission to access the applications page.</p>
-                    <button class="btn btn-primary" onclick="app.loadPage('dashboard')">Go to Dashboard</button>
-                </div>
-            `;
-        }
-
-        return `
-            <div class="applications-container">
-                <div class="page-header">
-                    <h1><i class="fas fa-clipboard-list"></i> Applications Management</h1>
-                    <p>Review and process student accommodation applications</p>
-                </div>
-
-                <div class="applications-grid">
-                    <div class="applications-list">
-                        <h3>Pending Applications (12)</h3>
-                        <div class="application-items">
-                            <div class="application-item">
-                                <div class="application-header">
-                                    <h4>John Doe</h4>
-                                    <span class="status-badge status-pending">Pending</span>
-                                </div>
-                                <p>Applied for: Double Room, Hostel A</p>
-                                <p>Submitted: 2 days ago</p>
-                                <div class="application-actions">
-                                    <button class="btn btn-success btn-sm" onclick="app.approveApplication('john-doe')">Approve</button>
-                                    <button class="btn btn-danger btn-sm" onclick="app.rejectApplication('john-doe')">Reject</button>
-                                    <button class="btn btn-info btn-sm" onclick="app.viewApplicationDetails('john-doe')">View Details</button>
-                                </div>
-                            </div>
-                            <!-- More application items would be loaded dynamically -->
-                        </div>
-                    </div>
-
-                    <div class="application-stats">
-                        <div class="stat-card">
-                            <h4>Total Applications</h4>
-                            <div class="stat-number">45</div>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Approved</h4>
-                            <div class="stat-number">28</div>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Rejected</h4>
-                            <div class="stat-number">5</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    async loadReportsPage() {
-        // Check if user has permission
-        if (!this.currentUser || (this.currentUser.role !== 'warden' && this.currentUser.role !== 'admin')) {
-            return `
-                <div class="error-container">
-                    <h2><i class="fas fa-lock"></i> Access Denied</h2>
-                    <p>You don't have permission to access the reports page.</p>
-                    <button class="btn btn-primary" onclick="app.loadPage('dashboard')">Go to Dashboard</button>
-                </div>
-            `;
-        }
-
-        return `
-            <div class="reports-container">
-                <div class="page-header">
-                    <h1><i class="fas fa-chart-bar"></i> Reports & Analytics</h1>
-                    <p>Generate reports and view hostel statistics</p>
-                </div>
-
-                <div class="reports-grid">
-                    <div class="report-card">
-                        <h3>Occupancy Report</h3>
-                        <p>Current room occupancy across all hostels</p>
-                        <button class="btn btn-primary" onclick="app.generateOccupancyReport()">Generate Report</button>
-                    </div>
-
-                    <div class="report-card">
-                        <h3>Application Trends</h3>
-                        <p>Monthly application submission trends</p>
-                        <button class="btn btn-primary" onclick="app.generateApplicationTrends()">Generate Report</button>
-                    </div>
-
-                    <div class="report-card">
-                        <h3>Revenue Report</h3>
-                        <p>Accommodation fees and payments</p>
-                        <button class="btn btn-primary" onclick="app.generateRevenueReport()">Generate Report</button>
-                    </div>
-
-                    <div class="report-card">
-                        <h3>Maintenance Report</h3>
-                        <p>Room maintenance and repairs</p>
-                        <button class="btn btn-primary" onclick="app.generateMaintenanceReport()">Generate Report</button>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // Warden-specific methods
-    async approveApplication(applicationId) {
-        if (!this.currentUser || (this.currentUser.role !== 'warden' && this.currentUser.role !== 'admin')) {
-            this.showError('Access denied');
-            return;
-        }
-
-        if (confirm('Are you sure you want to approve this application?')) {
-            // Mock API call - in development mode
-            this.showToast('Application approved successfully (Demo Mode)', 'success');
-            setTimeout(() => {
-                this.loadPage('applications');
-            }, 1000);
-        }
-    }
-
-    async rejectApplication(applicationId) {
-        if (!this.currentUser || (this.currentUser.role !== 'warden' && this.currentUser.role !== 'admin')) {
-            this.showError('Access denied');
-            return;
-        }
-
-        const reason = prompt('Please provide a reason for rejection:');
-        if (reason) {
-            // Mock API call - in development mode
-            this.showToast('Application rejected (Demo Mode)', 'warning');
-            setTimeout(() => {
-                this.loadPage('applications');
-            }, 1000);
-        }
-    }
-
-    async viewApplicationDetails(applicationId) {
-        if (!this.currentUser || (this.currentUser.role !== 'warden' && this.currentUser.role !== 'admin')) {
-            this.showError('Access denied');
-            return;
-        }
-
-        // Mock application details - in development mode
-        const mockApplication = {
-            studentName: 'John Doe',
-            registrationNumber: '123456',
-            email: 'john.doe@au.edu',
-            hostelChoice: 'Hostel A',
-            roomType: 'Double',
-            status: 'Pending',
-            submittedDate: '2024-01-15'
-        };
-
-        this.showToast(`Application details loaded (Demo Mode)`, 'info');
-        setTimeout(() => {
-            alert(`Application Details:\n${JSON.stringify(mockApplication, null, 2)}`);
-        }, 500);
-    }
-
-    async generateOccupancyReport() {
-        if (!this.currentUser || (this.currentUser.role !== 'warden' && this.currentUser.role !== 'admin')) {
-            this.showError('Access denied');
-            return;
-        }
-
-        // Mock occupancy report - in development mode
-        const mockReport = {
-            totalRooms: 100,
-            occupiedRooms: 85,
-            occupancyRate: '85%',
-            vacantRooms: 15,
-            byHostel: {
-                'Hostel A': { occupied: 45, total: 50, rate: '90%' },
-                'Hostel B': { occupied: 40, total: 50, rate: '80%' }
-            }
-        };
-
-        this.showToast('Occupancy report generated (Demo Mode)', 'success');
-        setTimeout(() => {
-            alert('Occupancy Report:\n' + JSON.stringify(mockReport, null, 2));
-        }, 500);
-    }
-
-    async generateApplicationTrends() {
-        if (!this.currentUser || (this.currentUser.role !== 'warden' && this.currentUser.role !== 'admin')) {
-            this.showError('Access denied');
-            return;
-        }
-
-        // Mock application trends report - in development mode
-        const mockReport = {
-            totalApplications: 150,
-            approved: 120,
-            rejected: 20,
-            pending: 10,
-            monthlyTrends: {
-                'Jan': 25,
-                'Feb': 30,
-                'Mar': 35,
-                'Apr': 40,
-                'May': 20
-            },
-            approvalRate: '80%'
-        };
-
-        this.showToast('Application trends report generated (Demo Mode)', 'success');
-        setTimeout(() => {
-            alert('Application Trends Report:\n' + JSON.stringify(mockReport, null, 2));
-        }, 500);
-    }
-
-    async generateRevenueReport() {
-        if (!this.currentUser || (this.currentUser.role !== 'warden' && this.currentUser.role !== 'admin')) {
-            this.showError('Access denied');
-            return;
-        }
-
-        // Mock revenue report - in development mode
-        const mockReport = {
-            totalRevenue: 150000,
-            monthlyRevenue: {
-                'Jan': 12000,
-                'Feb': 15000,
-                'Mar': 18000,
-                'Apr': 20000,
-                'May': 25000
-            },
-            averageMonthlyRevenue: 18000,
-            paymentMethods: {
-                'Cash': 40,
-                'Bank Transfer': 35,
-                'Online Payment': 25
-            }
-        };
-
-        this.showToast('Revenue report generated (Demo Mode)', 'success');
-        setTimeout(() => {
-            alert('Revenue Report:\n' + JSON.stringify(mockReport, null, 2));
-        }, 500);
-    }
-
-    async generateMaintenanceReport() {
-        if (!this.currentUser || (this.currentUser.role !== 'warden' && this.currentUser.role !== 'admin')) {
-            this.showError('Access denied');
-            return;
-        }
-
-        // Mock maintenance report - in development mode
-        const mockReport = {
-            totalRequests: 45,
-            pendingRequests: 12,
-            completedRequests: 33,
-            urgentRequests: 5,
-            byCategory: {
-                'Electrical': 15,
-                'Plumbing': 10,
-                'Structural': 8,
-                'Cleaning': 12
-            },
-            averageResolutionTime: '3.5 days'
-        };
-
-        this.showToast('Maintenance report generated (Demo Mode)', 'success');
-        setTimeout(() => {
-            alert('Maintenance Report:\n' + JSON.stringify(mockReport, null, 2));
-        }, 500);
-    }
-
     async handleLogout() {
         try {
             await authManager.signOut();
+            if (window.firebaseService) window.firebaseService.cleanup();
             this.showToast('Logged out successfully', 'success');
             setTimeout(() => {
                 window.location.href = 'pages/login.html';
             }, 1000);
         } catch (error) {
-            console.error('Logout error:', error);
             this.showToast('Error logging out', 'error');
         }
     }
 
-    async loadApplicationStatus() {
-        return '<div class="page-header"><h1>Application Status</h1><p>View your application status here</p></div>';
-    }
-
-
-
-    // Image Slider Functionality
+    // --- Slider ---
     initSlider() {
         this.currentSlide = 0;
         this.totalSlides = 4;
-        this.autoSlideInterval = null;
-        
-        // Create slider dots
         const sliderNav = document.getElementById('sliderNav');
         if (sliderNav) {
+            sliderNav.innerHTML = '';
             for (let i = 0; i < this.totalSlides; i++) {
                 const dot = document.createElement('div');
                 dot.className = `slider-dot ${i === 0 ? 'active' : ''}`;
                 dot.onclick = () => this.goToSlide(i);
                 sliderNav.appendChild(dot);
             }
-            
-            // Start auto-slide
             this.startAutoSlide();
         }
     }
 
-    nextSlide() {
-        this.currentSlide = (this.currentSlide + 1) % this.totalSlides;
-        this.updateSlider();
-        this.resetAutoSlide();
-    }
-
-    prevSlide() {
-        this.currentSlide = (this.currentSlide - 1 + this.totalSlides) % this.totalSlides;
-        this.updateSlider();
-        this.resetAutoSlide();
-    }
-
-    goToSlide(index) {
-        this.currentSlide = index;
-        this.updateSlider();
-        this.resetAutoSlide();
-    }
+    nextSlide() { this.currentSlide = (this.currentSlide + 1) % this.totalSlides; this.updateSlider(); this.resetAutoSlide(); }
+    prevSlide() { this.currentSlide = (this.currentSlide - 1 + this.totalSlides) % this.totalSlides; this.updateSlider(); this.resetAutoSlide(); }
+    goToSlide(i) { this.currentSlide = i; this.updateSlider(); this.resetAutoSlide(); }
 
     updateSlider() {
         const track = document.getElementById('sliderTrack');
-        const dots = document.querySelectorAll('.slider-dot');
-        
-        if (track) {
-            track.style.transform = `translateX(-${this.currentSlide * 100}%)`;
-        }
-        
-        dots.forEach((dot, index) => {
-            dot.classList.toggle('active', index === this.currentSlide);
-        });
+        if (track) track.style.transform = `translateX(-${this.currentSlide * 100}%)`;
+        document.querySelectorAll('.slider-dot').forEach((dot, i) => dot.classList.toggle('active', i === this.currentSlide));
     }
 
-    startAutoSlide() {
-        this.autoSlideInterval = setInterval(() => {
-            this.nextSlide();
-        }, 5000); // Change slide every 5 seconds
-    }
+    startAutoSlide() { this.autoSlideInterval = setInterval(() => this.nextSlide(), 5000); }
+    resetAutoSlide() { clearInterval(this.autoSlideInterval); this.startAutoSlide(); }
 
-    resetAutoSlide() {
-        clearInterval(this.autoSlideInterval);
-        this.startAutoSlide();
-    }
-
-    // Theme Toggle
-    toggleTheme() {
-        const html = document.documentElement;
-        const currentTheme = html.getAttribute('data-theme');
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        
-        html.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-        
-        const themeIcon = document.getElementById('themeIcon');
-        const themeText = document.getElementById('themeText');
-        
-        if (themeIcon && themeText) {
-            if (newTheme === 'dark') {
-                themeIcon.className = 'fas fa-sun';
-                themeText.textContent = 'Light';
-            } else {
-                themeIcon.className = 'fas fa-moon';
-                themeText.textContent = 'Dark';
-            }
-        }
-        
-        this.showToast(`Switched to ${newTheme} mode`, 'success');
-    }
-
-    // Notification Management
-    toggleNotifications() {
-        const dropdown = document.getElementById('notificationDropdown');
-        if (dropdown) {
-            dropdown.classList.toggle('show');
-        }
-    }
-
-    markAllRead(event) {
-        event.preventDefault();
-        const notificationItems = document.querySelectorAll('.notification-item.unread');
-        notificationItems.forEach(item => {
-            item.classList.remove('unread');
-        });
-        
-        const notificationCount = document.getElementById('notificationCount');
-        if (notificationCount) {
-            notificationCount.textContent = '0';
-            notificationCount.style.display = 'none';
-        }
-        
-        this.showToast('All notifications marked as read', 'success');
-    }
-
-    // Profile Management
-    updateProfilePicture(event) {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const profileImage = document.getElementById('profileImage');
-                if (profileImage) {
-                    profileImage.src = e.target.result;
-                    this.showToast('Profile picture updated successfully', 'success');
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-    }
-
-    editProfile() {
-        this.showToast('Opening profile editor...', 'info');
-        // TODO: Implement profile editing modal
-    }
-
-    viewApplicationDetails() {
-        this.showToast('Loading application details...', 'info');
-        // TODO: Implement application details view
-    }
-
-    viewRoomDetails() {
-        this.showToast('Loading room details...', 'info');
-        // TODO: Implement room details view
-    }
-
-    initPageComponents(page) {
-        // Initialize page-specific components
-        if (page === 'dashboard') {
-            // Initialize slider if on dashboard
-            setTimeout(() => {
-                this.initSlider();
-            }, 100);
-        }
-        
-        if (page === 'apply') {
-            // Populate hostel blocks based on gender
-            setTimeout(() => {
-                const hostelBlock = document.getElementById('hostelBlock');
-                const userGender = this.currentUser?.gender;
-                
-                if (hostelBlock && userGender) {
-                    hostelBlock.innerHTML = '<option value="">Select Block</option>';
-                    
-                    if (userGender === 'female') {
-                        ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(block => {
-                            hostelBlock.innerHTML += `<option value="${block}">Block ${block} (Girls)</option>`;
-                        });
-                    } else if (userGender === 'male') {
-                        ['I', 'J', 'K', 'L'].forEach(block => {
-                            hostelBlock.innerHTML += `<option value="${block}">Block ${block} (Boys)</option>`;
-                        });
-                    }
-                }
-            }, 100);
-        }
-        
-        // Close notification dropdown when clicking outside
-        document.addEventListener('click', (e) => {
-            const notificationBell = document.querySelector('.notification-bell');
-            const notificationDropdown = document.getElementById('notificationDropdown');
-            
-            if (notificationBell && notificationDropdown && 
-                !notificationBell.contains(e.target) && 
-                !notificationDropdown.contains(e.target)) {
-                notificationDropdown.classList.remove('show');
-            }
-        });
-    }
-
-    generateRoomCards() {
-        // Generate sample room cards
-        const rooms = [
-            { number: 'A-101', hostel: 'Hostel A', capacity: 4, occupied: 2, type: 'Quad', available: true },
-            { number: 'A-102', hostel: 'Hostel A', capacity: 2, occupied: 1, type: 'Double', available: true },
-            { number: 'A-103', hostel: 'Hostel A', capacity: 4, occupied: 4, type: 'Quad', available: false },
-            { number: 'B-201', hostel: 'Hostel B', capacity: 2, occupied: 0, type: 'Double', available: true },
-            { number: 'B-202', hostel: 'Hostel B', capacity: 4, occupied: 3, type: 'Quad', available: true },
-            { number: 'B-203', hostel: 'Hostel B', capacity: 1, occupied: 0, type: 'Single', available: true },
-        ];
-
-        return rooms.map(room => `
-            <div class="room-card ${room.available ? 'available' : 'full'}">
-                <div class="room-card-header">
-                    <h4>Room ${room.number}</h4>
-                    <span class="room-type">${room.type}</span>
-                </div>
-                <div class="room-info">
-                    <p><i class="fas fa-building"></i> ${room.hostel}</p>
-                    <p><i class="fas fa-users"></i> Capacity: ${room.capacity}</p>
-                    <p><i class="fas fa-user-check"></i> Occupied: ${room.occupied}</p>
-                    <p><i class="fas fa-door-open"></i> Available: ${room.capacity - room.occupied}</p>
-                </div>
-                <div class="availability-meter">
-                    <div class="meter-fill" style="width: ${(room.occupied / room.capacity) * 100}%"></div>
-                </div>
-                <button class="btn ${room.available ? 'btn-primary' : 'btn-outline'}" 
-                        ${!room.available ? 'disabled' : ''} 
-                        onclick="app.selectRoom('${room.number}')">
-                    ${room.available ? '<i class="fas fa-check"></i> Select Room' : '<i class="fas fa-lock"></i> Full'}
-                </button>
-            </div>
-        `).join('');
-    }
-
-    selectRoom(roomNumber) {
-        this.showToast(`Room ${roomNumber} selected. Proceeding to application...`, 'success');
-        setTimeout(() => {
-            this.loadPage('apply');
-        }, 1500);
-    }
-
-    // Room Explorer Methods
+    // --- Room Data Generation ---
     generateRoomsData(gender) {
-        const blocks = gender === 'female' ? ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] : ['I', 'J', 'K', 'L'];
+        const blocks = gender === 'female' ? ['A','B','C','D','E','F','G','H'] : ['I','J','K','L'];
         const rooms = [];
-        
         blocks.forEach(block => {
             for (let floor = 1; floor <= 3; floor++) {
                 for (let room = 1; room <= 8; room++) {
                     const roomNumber = `${block}-${floor}0${room}`;
-                    const capacity = 3; // All rooms are triple occupancy
-                    const occupied = Math.floor(Math.random() * 4); // 0-3 students
-                    const available = Math.max(0, capacity - occupied);
-                    
+                    const capacity = 3;
+                    const occupied = Math.floor(Math.random() * 4);
                     rooms.push({
-                        number: roomNumber,
-                        block: block,
-                        floor: floor,
-                        capacity: capacity,
-                        occupied: occupied,
-                        available: available,
+                        number: roomNumber, block, floor, capacity,
+                        occupied: Math.min(occupied, capacity),
+                        available: Math.max(0, capacity - Math.min(occupied, capacity)),
                         amenities: ['WiFi', 'Study Desk', 'Wardrobe', 'Fan'],
                         condition: ['Excellent', 'Good', 'Fair'][Math.floor(Math.random() * 3)],
                         lastCleaned: `${Math.floor(Math.random() * 7) + 1} days ago`
@@ -1355,254 +1282,147 @@ class HostelApp {
                 }
             }
         });
-        
         return rooms;
     }
 
     generateRoomCard3D(room) {
-        const availabilityPercent = (room.available / room.capacity) * 100;
-        const statusColor = room.available === 0 ? 'var(--third-light)' : 
-                           room.available === room.capacity ? 'var(--accent-green)' : 
-                           'var(--accent-orange)';
-        
+        const statusColor = room.available === 0 ? 'var(--third-light)' :
+                           room.available === room.capacity ? 'var(--accent-green)' : 'var(--accent-orange)';
         return `
             <div class="room-card-3d" data-block="${room.block}" data-available="${room.available > 0 ? 'available' : 'full'}">
-                <div class="room-card-inner" style="background: var(--bg-primary); border-radius: 16px; padding: 1.5rem; box-shadow: var(--shadow-lg); border-left: 4px solid ${statusColor}; cursor: pointer;" onclick="app.showRoomDetails('${room.number}')">
-                    <!-- Room Header -->
+                <div style="background: var(--bg-primary); border-radius: 16px; padding: 1.5rem; box-shadow: var(--shadow-lg); border-left: 4px solid ${statusColor}; cursor: pointer; transition: transform 0.3s ease;" onclick="app.showRoomDetails('${room.number}')" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <h3 style="color: var(--primary-red); margin: 0; font-size: 1.5rem;">
-                            <i class="fas fa-door-closed"></i> ${room.number}
-                        </h3>
-                        <span style="background: ${statusColor}; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
-                            ${room.available > 0 ? `${room.available} Available` : 'Full'}
-                        </span>
+                        <h3 style="color: var(--primary-red); margin: 0;"><i class="fas fa-door-closed"></i> ${room.number}</h3>
+                        <span style="background: ${statusColor}; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">${room.available > 0 ? room.available + ' Available' : 'Full'}</span>
                     </div>
-                    
-                    <!-- Visual Bed Layout -->
                     <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 12px; margin-bottom: 1rem;">
-                        <div style="text-align: center; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">
-                            <i class="fas fa-bed"></i> Bed Layout
-                        </div>
-                        <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 0.5rem;">
+                        <div style="text-align: center; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);"><i class="fas fa-bed"></i> Bed Layout</div>
+                        <div style="display: flex; justify-content: center; gap: 0.5rem;">
                             ${Array(room.capacity).fill(0).map((_, i) => `
-                                <div class="bed-icon ${i < room.occupied ? 'occupied' : 'available'}" 
-                                     title="${i < room.occupied ? 'Occupied' : 'Available'}">
+                                <div class="bed-icon ${i < room.occupied ? 'occupied' : 'available'}" title="${i < room.occupied ? 'Occupied' : 'Available'}">
                                     <i class="fas fa-bed" style="color: white; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; height: 100%;"></i>
                                 </div>
                             `).join('')}
                         </div>
                     </div>
-                    
-                    <!-- Room Info -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; font-size: 0.9rem;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary);">
-                            <i class="fas fa-building" style="color: var(--primary-red);"></i>
-                            <span>Block ${room.block}</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary);">
-                            <i class="fas fa-layer-group" style="color: var(--primary-red);"></i>
-                            <span>Floor ${room.floor}</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary);">
-                            <i class="fas fa-users" style="color: var(--primary-red);"></i>
-                            <span>${room.occupied}/${room.capacity}</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary);">
-                            <i class="fas fa-star" style="color: var(--primary-red);"></i>
-                            <span>${room.condition}</span>
-                        </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.9rem; color: var(--text-secondary);">
+                        <span><i class="fas fa-building" style="color: var(--primary-red);"></i> Block ${room.block}</span>
+                        <span><i class="fas fa-layer-group" style="color: var(--primary-red);"></i> Floor ${room.floor}</span>
+                        <span><i class="fas fa-users" style="color: var(--primary-red);"></i> ${room.occupied}/${room.capacity}</span>
+                        <span><i class="fas fa-star" style="color: var(--primary-red);"></i> ${room.condition}</span>
                     </div>
-                    
-                    <!-- Progress Bar -->
-                    <div style="background: var(--bg-secondary); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 1rem;">
-                        <div style="height: 100%; background: linear-gradient(90deg, ${statusColor} 0%, ${statusColor} 100%); width: ${(room.occupied / room.capacity) * 100}%; transition: width 0.3s ease;"></div>
+                    <div style="background: var(--bg-secondary); height: 6px; border-radius: 3px; overflow: hidden; margin-top: 1rem;">
+                        <div style="height: 100%; background: ${statusColor}; width: ${(room.occupied / room.capacity) * 100}%;"></div>
                     </div>
-                    
-                    <!-- Amenities -->
-                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
-                        ${room.amenities.map(amenity => `
-                            <span style="background: var(--bg-secondary); color: var(--text-primary); padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem;">
-                                <i class="fas fa-check" style="color: var(--accent-green); font-size: 0.7rem;"></i>
-                                ${amenity}
-                            </span>
-                        `).join('')}
-                    </div>
-                    
-                    <!-- Action Button -->
-                    <button class="btn ${room.available > 0 ? 'btn-primary' : 'btn-outline'}" 
-                            style="width: 100%; padding: 0.75rem; border-radius: 8px; font-weight: 600; transition: all 0.3s ease; ${room.available === 0 ? 'opacity: 0.5; cursor: not-allowed;' : ''}" 
-                            ${room.available === 0 ? 'disabled' : ''}
-                            onclick="event.stopPropagation(); app.selectRoomForApplication('${room.number}')">
-                        ${room.available > 0 ? 
-                            `<i class="fas fa-hand-pointer"></i> Select This Room` : 
-                            `<i class="fas fa-lock"></i> Room Full`
-                        }
-                    </button>
                 </div>
             </div>
         `;
     }
 
     showRoomDetails(roomNumber) {
-        const userGender = this.currentUser?.gender;
-        const rooms = this.generateRoomsData(userGender);
+        const rooms = this.generateRoomsData(this.currentUser?.gender);
         const room = rooms.find(r => r.number === roomNumber);
-        
         if (!room) return;
-        
-        const modalBody = document.getElementById('roomModalBody');
+
         const modal = document.getElementById('roomModal');
-        
-        modalBody.innerHTML = `
-            <div style="text-align: center; margin-bottom: 2rem;">
-                <h2 style="color: var(--primary-red); margin-bottom: 0.5rem;">
-                    <i class="fas fa-door-open"></i> Room ${room.number}
-                </h2>
-                <p style="color: var(--text-secondary);">Detailed Room Information</p>
+        const body = document.getElementById('roomModalBody');
+        body.innerHTML = `
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <h2 style="color: var(--primary-red);"><i class="fas fa-door-open"></i> Room ${room.number}</h2>
             </div>
-            
             <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
-                <h3 style="color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                    <i class="fas fa-info-circle"></i> Room Details
-                </h3>
                 <div style="display: grid; gap: 0.75rem;">
-                    <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-primary); border-radius: 8px;">
-                        <span style="font-weight: 600;"><i class="fas fa-building"></i> Block:</span>
-                        <span>${room.block} (${userGender === 'female' ? 'Girls' : 'Boys'})</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-primary); border-radius: 8px;">
-                        <span style="font-weight: 600;"><i class="fas fa-layer-group"></i> Floor:</span>
-                        <span>Floor ${room.floor}</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-primary); border-radius: 8px;">
-                        <span style="font-weight: 600;"><i class="fas fa-bed"></i> Capacity:</span>
-                        <span>${room.capacity} Students (Triple Occupancy)</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-primary); border-radius: 8px;">
-                        <span style="font-weight: 600;"><i class="fas fa-users"></i> Currently Occupied:</span>
-                        <span>${room.occupied} Students</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-primary); border-radius: 8px;">
-                        <span style="font-weight: 600;"><i class="fas fa-door-open"></i> Available Beds:</span>
-                        <span style="color: ${room.available > 0 ? 'var(--accent-green)' : 'var(--primary-red)'}; font-weight: 700;">${room.available}</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-primary); border-radius: 8px;">
-                        <span style="font-weight: 600;"><i class="fas fa-star"></i> Condition:</span>
-                        <span>${room.condition}</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-primary); border-radius: 8px;">
-                        <span style="font-weight: 600;"><i class="fas fa-broom"></i> Last Cleaned:</span>
-                        <span>${room.lastCleaned}</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
-                <h3 style="color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                    <i class="fas fa-list-check"></i> Amenities
-                </h3>
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;">
-                    ${room.amenities.map(amenity => `
-                        <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: var(--bg-primary); border-radius: 8px;">
-                            <i class="fas fa-check-circle" style="color: var(--accent-green);"></i>
-                            <span>${amenity}</span>
+                    ${[
+                        ['Building', `Block ${room.block}`, 'fa-building'],
+                        ['Floor', `Floor ${room.floor}`, 'fa-layer-group'],
+                        ['Capacity', `${room.capacity} Students`, 'fa-bed'],
+                        ['Occupied', `${room.occupied} Students`, 'fa-users'],
+                        ['Available', `${room.available} Beds`, 'fa-door-open'],
+                        ['Condition', room.condition, 'fa-star'],
+                        ['Last Cleaned', room.lastCleaned, 'fa-broom']
+                    ].map(([label, value, icon]) => `
+                        <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-primary); border-radius: 8px;">
+                            <span style="font-weight: 600;"><i class="fas ${icon}"></i> ${label}</span>
+                            <span>${value}</span>
                         </div>
                     `).join('')}
                 </div>
             </div>
-            
-            <div style="display: flex; gap: 1rem;">
-                <button onclick="app.closeRoomModal()" class="btn btn-outline" style="flex: 1; padding: 0.75rem; border: 2px solid var(--primary-red); background: transparent; color: var(--primary-red); border-radius: 8px; font-weight: 600;">
-                    <i class="fas fa-times"></i> Close
-                </button>
-                <button onclick="app.selectRoomForApplication('${room.number}')" class="btn btn-primary" style="flex: 1; padding: 0.75rem; background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-dark) 100%); color: white; border: none; border-radius: 8px; font-weight: 600; ${room.available === 0 ? 'opacity: 0.5; cursor: not-allowed;' : ''}" ${room.available === 0 ? 'disabled' : ''}>
-                    <i class="fas fa-hand-pointer"></i> Select Room
-                </button>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem;">
+                ${room.amenities.map(a => `<span style="background: var(--bg-secondary); padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.85rem;"><i class="fas fa-check" style="color: var(--accent-green);"></i> ${a}</span>`).join('')}
             </div>
+            <button onclick="app.closeRoomModal()" class="btn btn-primary" style="width: 100%; padding: 0.75rem; background: var(--primary-red); color: white; border: none; border-radius: 8px; cursor: pointer;">
+                <i class="fas fa-times"></i> Close
+            </button>
         `;
-        
         modal.style.display = 'flex';
     }
 
     closeRoomModal() {
         const modal = document.getElementById('roomModal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
-    }
-
-    selectRoomForApplication(roomNumber) {
-        this.closeRoomModal();
-        this.showToast(`Room ${roomNumber} selected! Redirecting to application...`, 'success');
-        setTimeout(() => {
-            this.loadPage('apply');
-        }, 1500);
+        if (modal) modal.style.display = 'none';
     }
 
     filterRoomsByBlock() {
         const blockFilter = document.getElementById('blockFilter')?.value || 'all';
-        const availabilityFilter = document.getElementById('availabilityFilter')?.value || 'all';
-        const sortFilter = document.getElementById('sortFilter')?.value || 'room';
-        
-        const roomCards = document.querySelectorAll('.room-card-3d');
-        let visibleCount = 0;
-        
-        roomCards.forEach(card => {
-            const cardBlock = card.getAttribute('data-block');
-            const cardAvailable = card.getAttribute('data-available');
-            
-            let showCard = true;
-            
-            if (blockFilter !== 'all' && cardBlock !== blockFilter) {
-                showCard = false;
-            }
-            
-            if (availabilityFilter === 'available' && cardAvailable !== 'available') {
-                showCard = false;
-            } else if (availabilityFilter === 'full' && cardAvailable !== 'full') {
-                showCard = false;
-            }
-            
-            card.style.display = showCard ? 'block' : 'none';
-            if (showCard) visibleCount++;
+        const availFilter = document.getElementById('availabilityFilter')?.value || 'all';
+        document.querySelectorAll('.room-card-3d').forEach(card => {
+            const block = card.dataset.block;
+            const avail = card.dataset.available;
+            let show = true;
+            if (blockFilter !== 'all' && block !== blockFilter) show = false;
+            if (availFilter === 'available' && avail !== 'available') show = false;
+            if (availFilter === 'full' && avail !== 'full') show = false;
+            card.style.display = show ? 'block' : 'none';
         });
-        
-        this.showToast(`Showing ${visibleCount} rooms`, 'info');
     }
 
     resetRoomFilters() {
-        const blockFilter = document.getElementById('blockFilter');
-        const availabilityFilter = document.getElementById('availabilityFilter');
-        const sortFilter = document.getElementById('sortFilter');
-        
-        if (blockFilter) blockFilter.value = 'all';
-        if (availabilityFilter) availabilityFilter.value = 'all';
-        if (sortFilter) sortFilter.value = 'room';
-        
-        const roomCards = document.querySelectorAll('.room-card-3d');
-        roomCards.forEach(card => {
-            card.style.display = 'block';
-        });
-        
-        this.showToast('Filters reset', 'success');
+        const bf = document.getElementById('blockFilter');
+        const af = document.getElementById('availabilityFilter');
+        if (bf) bf.value = 'all';
+        if (af) af.value = 'all';
+        document.querySelectorAll('.room-card-3d').forEach(c => c.style.display = 'block');
+    }
+
+    // --- Page Component Init ---
+    initPageComponents(page) {
+        if (page === 'dashboard') {
+            setTimeout(() => this.initSlider(), 100);
+        }
+        if (page === 'apply') {
+            setTimeout(() => {
+                const hostelBlock = document.getElementById('hostelBlock');
+                const userGender = this.currentUser?.gender;
+                if (hostelBlock && userGender) {
+                    hostelBlock.innerHTML = '<option value="">Select Block</option>';
+                    const blocks = userGender === 'female' ? ['A','B','C','D','E','F','G','H'] : ['I','J','K','L'];
+                    blocks.forEach(b => {
+                        hostelBlock.innerHTML += `<option value="${b}">Block ${b} (${userGender === 'female' ? 'Girls' : 'Boys'})</option>`;
+                    });
+                }
+            }, 100);
+        }
     }
 }
 
-// Initialize theme on page load
+// Theme toggle
 document.addEventListener('DOMContentLoaded', function() {
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
 });
 
-// Make theme toggle globally available
 window.toggleTheme = function() {
-    if (window.app) {
-        window.app.toggleTheme();
-    }
+    const html = document.documentElement;
+    const current = html.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    const icon = document.getElementById('themeIconNav') || document.getElementById('themeIcon');
+    if (icon) icon.className = next === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
 };
 
-// Initialize the app
-// Initialize the app
+// Initialize
 window.addEventListener('DOMContentLoaded', async () => {
     const app = new HostelApp();
     window.app = app;

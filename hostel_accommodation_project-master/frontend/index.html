@@ -7,13 +7,14 @@
     <link rel="icon" type="image/png" href="assets/images/logo.png">
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="styles/futuristic.css">
+    <link rel="stylesheet" href="styles/responsive.css">
+    <link rel="stylesheet" href="styles/utilities.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- Firebase SDK -->
+    <!-- Firebase SDK (Firestore only, no Auth) -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, query, where, getDocs, orderBy, onSnapshot, serverTimestamp, runTransaction } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, query, where, getDocs, orderBy, onSnapshot, serverTimestamp, runTransaction } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyCiQ6ACTlxFqLEuE74oSt0qa0Unt__k3MQ",
@@ -26,29 +27,14 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getFirestore(app);
 
-        window.firebaseAuth = auth;
         window.firebaseDb = db;
-        window.firebaseFunctions = { 
-            createUserWithEmailAndPassword, 
-            signInWithEmailAndPassword, 
-            signOut, 
-            onAuthStateChanged, 
-            doc, 
-            setDoc, 
-            getDoc, 
-            collection, 
-            addDoc, 
-            updateDoc, 
-            query, 
-            where,
-            getDocs,
-            orderBy, 
-            onSnapshot, 
-            serverTimestamp,
-            runTransaction
+        window.firebaseFunctions = {
+            doc, setDoc, getDoc,
+            collection, addDoc, updateDoc, deleteDoc,
+            query, where, getDocs, orderBy,
+            onSnapshot, serverTimestamp, runTransaction
         };
     </script>
 </head>
@@ -61,7 +47,7 @@
                 <img src="assets/images/logo.png" alt="AU Logo" class="logo-image">
                 <span>AU Hostels</span>
             </a>
-            
+
             <div class="nav-menu" id="navMenu">
                 <a href="#dashboard" class="nav-link active">
                     <i class="fas fa-home"></i> Dashboard
@@ -72,7 +58,9 @@
                 <a href="#status" class="nav-link student-only">
                     <i class="fas fa-history"></i> Application Status
                 </a>
-                <a href="pages/allocation.html" class="nav-link"><i class="fas fa-bed"></i> View Rooms</a>
+                <a href="#rooms" class="nav-link">
+                    <i class="fas fa-bed"></i> View Rooms
+                </a>
                 <a href="#allocation" class="nav-link admin-only" style="display: none;">
                     <i class="fas fa-cogs"></i> Room Allocation
                 </a>
@@ -95,7 +83,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <button class="mobile-menu-btn" id="mobileMenuBtn">
                 <i class="fas fa-bars"></i>
             </button>
@@ -104,7 +92,6 @@
 
     <!-- Main Content Area -->
     <main class="main-content" id="mainContent">
-        <!-- Content will be dynamically loaded here -->
         <div class="loading-spinner" id="loadingSpinner">
             <div class="spinner"></div>
         </div>
@@ -130,21 +117,15 @@
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; 2024 African University. All rights reserved.</p>
+            <p>&copy; 2026 African University. All rights reserved.</p>
         </div>
     </footer>
 
     <!-- Notification Toast -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- Modals (Hidden by default) -->
-    <div class="modal" id="loginModal">
-        <!-- Login modal content -->
-    </div>
-
     <script src="scripts/firebase-service.js"></script>
     <script src="scripts/auth.js"></script>
     <script src="scripts/main.js"></script>
-    <script src="scripts/api.js"></script>
 </body>
 </html>
