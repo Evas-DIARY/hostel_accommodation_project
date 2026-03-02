@@ -1,0 +1,17 @@
+# Ignore backend files
+app/
+backend/
+*.py
+requirements.txt
+pyproject.toml
+poetry.lock
+__pycache__/
+*.pyc
+.env
+secrets/
+
+# Ignore development files
+node_modules/
+.git/
+.vscode/
+*.log

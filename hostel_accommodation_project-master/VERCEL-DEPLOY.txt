@@ -1,0 +1,101 @@
+🚀 DEPLOY TO VERCEL - STEP BY STEP
+===================================
+
+## WHAT I FIXED
+- Created vercel.json (tells Vercel this is a static site)
+- Created .vercelignore (excludes Python backend files)
+- Created index.html (entry point for Vercel)
+
+## DEPLOYMENT STEPS
+
+### Option 1: Deploy via Vercel Dashboard (Easiest)
+
+1. **Go to Vercel**
+   - Visit: https://vercel.com
+   - Sign in with GitHub/GitLab/Bitbucket
+
+2. **Import Project**
+   - Click "Add New" → "Project"
+   - Import your Git repository
+   - OR drag & drop the entire folder
+
+3. **Configure Project**
+   - Framework Preset: Select "Other" or "Static Site"
+   - Root Directory: Leave as "./" (root)
+   - Build Command: Leave EMPTY
+   - Output Directory: "frontend"
+   - Install Command: Leave EMPTY
+
+4. **Deploy**
+   - Click "Deploy"
+   - Wait 1-2 minutes
+   - Done! Your site is live
+
+### Option 2: Deploy via Vercel CLI
+
+1. **Install Vercel CLI**
+   ```bash
+   npm install -g vercel
+   ```
+
+2. **Login**
+   ```bash
+   vercel login
+   ```
+
+3. **Deploy**
+   ```bash
+   cd hostel_accommodation_project-master
+   vercel
+   ```
+
+4. **Follow prompts:**
+   - Set up and deploy? Y
+   - Which scope? (select your account)
+   - Link to existing project? N
+   - Project name? hostel-accommodation
+   - In which directory? ./
+   - Override settings? N
+
+5. **Production Deploy**
+   ```bash
+   vercel --prod
+   ```
+
+## IMPORTANT: Firebase Configuration
+
+After deployment, you need to add your Vercel domain to Firebase:
+
+1. Go to Firebase Console: https://console.firebase.google.com
+2. Select "hostel-accommodation" project
+3. Go to "Authentication" → "Settings" → "Authorized domains"
+4. Click "Add domain"
+5. Add your Vercel domain (e.g., your-app.vercel.app)
+6. Save
+
+## TROUBLESHOOTING
+
+**Error: "No fastapi entrypoint found"**
+✅ FIXED - vercel.json now tells Vercel this is a static site
+
+**Error: "Build failed"**
+- Make sure vercel.json exists in root
+- Make sure you selected "Other" as framework preset
+
+**404 errors on deployed site**
+- Check that "Output Directory" is set to "frontend"
+- Check that index.html exists in root
+
+**Firebase not working on deployed site**
+- Add your Vercel domain to Firebase authorized domains
+- Check browser console for CORS errors
+
+## AFTER DEPLOYMENT
+
+Your site will be at: https://your-project-name.vercel.app
+
+Test credentials:
+- Student ID: 123456 / Password: student123
+- Warden ID: 999999 / Password: warden123
+
+===================================
