@@ -28,6 +28,7 @@ class HostelApp {
 
         this.checkAuth();
         this.setupEventListeners();
+        this.setupInactivityTimer();
     }
 
     async checkAuth() {
@@ -106,6 +107,14 @@ class HostelApp {
                 this.handleLogout();
             }
         });
+
+        // Mobile logout button
+        const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
+        if (mobileLogoutBtn) {
+            mobileLogoutBtn.addEventListener('click', () => {
+                this.handleLogout();
+            });
+        }
     }
 
     setActiveNav(page) {
@@ -1940,8 +1949,96 @@ class HostelApp {
         this.showToast(message, 'error');
     }
 
+    // ========================
+    // INACTIVITY AUTO-LOGOUT (5 minutes)
+    // ========================
+
+    setupInactivityTimer() {
+        if (window.location.pathname.includes('login.html')) return;
+
+        this._inactivityTimeout = null;
+        this._warningTimeout = null;
+        this._countdownInterval = null;
+        this._inactivityDelay = 5 * 60 * 1000; // 5 minutes
+        this._warningDuration = 30; // 30 seconds countdown
+
+        const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+        const resetTimer = () => this.resetInactivityTimer();
+        events.forEach(evt => document.addEventListener(evt, resetTimer, { passive: true }));
+
+        this.resetInactivityTimer();
+    }
+
+    resetInactivityTimer() {
+        // Clear existing timers
+        if (this._inactivityTimeout) clearTimeout(this._inactivityTimeout);
+        if (this._warningTimeout) clearTimeout(this._warningTimeout);
+        if (this._countdownInterval) clearInterval(this._countdownInterval);
+
+        // Dismiss warning modal if open
+        const existingModal = document.getElementById('inactivityOverlay');
+        if (existingModal) existingModal.remove();
+
+        // Set new inactivity timeout
+        this._inactivityTimeout = setTimeout(() => {
+            this.showInactivityWarning();
+        }, this._inactivityDelay);
+    }
+
+    showInactivityWarning() {
+        let remaining = this._warningDuration;
+
+        const overlay = document.createElement('div');
+        overlay.className = 'inactivity-overlay';
+        overlay.id = 'inactivityOverlay';
+        overlay.innerHTML = `
+            <div class="inactivity-modal">
+                <i class="fas fa-clock"></i>
+                <h3>Session Timeout Warning</h3>
+                <p>You have been inactive for 5 minutes. You will be logged out automatically.</p>
+                <div class="countdown" id="inactivityCountdown">${remaining}s</div>
+                <div class="modal-actions">
+                    <button class="btn-stay" id="stayLoggedInBtn">
+                        <i class="fas fa-check"></i> Stay Logged In
+                    </button>
+                    <button class="btn-logout-now" id="logoutNowBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout Now
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        const countdownEl = document.getElementById('inactivityCountdown');
+        this._countdownInterval = setInterval(() => {
+            remaining--;
+            if (countdownEl) countdownEl.textContent = remaining + 's';
+            if (remaining <= 0) {
+                clearInterval(this._countdownInterval);
+                this.handleLogout();
+            }
+        }, 1000);
+
+        document.getElementById('stayLoggedInBtn').addEventListener('click', () => {
+            this.resetInactivityTimer();
+        });
+
+        document.getElementById('logoutNowBtn').addEventListener('click', () => {
+            clearInterval(this._countdownInterval);
+            this.handleLogout();
+        });
+    }
+
     async handleLogout() {
         try {
+            // Clear inactivity timers
+            if (this._inactivityTimeout) clearTimeout(this._inactivityTimeout);
+            if (this._warningTimeout) clearTimeout(this._warningTimeout);
+            if (this._countdownInterval) clearInterval(this._countdownInterval);
+            const modal = document.getElementById('inactivityOverlay');
+            if (modal) modal.remove();
+
             await authManager.signOut();
             if (window.firebaseService) window.firebaseService.cleanup();
             this.showToast('Logged out successfully', 'success');

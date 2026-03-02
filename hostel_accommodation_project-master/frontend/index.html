@@ -11,6 +11,15 @@
     <link rel="stylesheet" href="styles/utilities.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Redirect to login if not authenticated -->
+    <script>
+        (function() {
+            var user = localStorage.getItem('currentUser');
+            if (!user) {
+                window.location.replace('pages/login.html');
+            }
+        })();
+    </script>
     <!-- Firebase SDK (Firestore only, no Auth) -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
@@ -97,6 +106,9 @@
                 </div>
             </div>
 
+            <button class="mobile-logout-btn" id="mobileLogoutBtn" title="Logout">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
             <button class="mobile-menu-btn" id="mobileMenuBtn">
                 <i class="fas fa-bars"></i>
             </button>
