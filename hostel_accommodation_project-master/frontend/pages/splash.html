@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AU Hostel Accommodation System</title>
+    <link rel="icon" type="image/png" href="../assets/images/logo.png">
+    <link rel="stylesheet" href="../styles/main.css">
+    <link rel="stylesheet" href="../styles/splash.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="splash-screen" id="splashScreen">
+        <!-- Decorative particle lines -->
+        <div class="splash-particles">
+            <div class="line"></div>
+            <div class="line"></div>
+            <div class="line"></div>
+            <div class="line"></div>
+            <div class="line"></div>
+        </div>
+
+        <!-- Logo with glow rings -->
+        <div class="splash-logo-wrapper">
+            <div class="splash-glow-ring"></div>
+            <div class="splash-glow-ring-inner"></div>
+            <img src="../assets/images/logo.png" alt="Africa University Logo" class="splash-logo">
+        </div>
+
+        <!-- Title -->
+        <h1 class="splash-title">
+            <span>AU</span> Hostel
+        </h1>
+        <p class="splash-subtitle">Accommodation System</p>
+
+        <!-- Loading bar -->
+        <div class="splash-loader">
+            <div class="splash-loader-bar"></div>
+        </div>
+
+        <!-- Skip button -->
+        <button class="splash-skip" id="skipBtn" onclick="goToLogin()">
+            Skip &rarr;
+        </button>
+    </div>
+
+    <script>
+        // Redirect to login after animation completes
+        var SPLASH_DURATION = 3800; // ms
+
+        function goToLogin() {
+            var splash = document.getElementById('splashScreen');
+            splash.classList.add('fade-out');
+            setTimeout(function() {
+                window.location.href = 'login.html';
+            }, 500);
+        }
+
+        // Auto-redirect after animation
+        setTimeout(goToLogin, SPLASH_DURATION);
+
+        // Also skip on any key press
+        document.addEventListener('keydown', function(e) {
+            goToLogin();
+        }, { once: true });
+    </script>
+</body>
+</html>
