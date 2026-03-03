@@ -1,0 +1,29 @@
+[debug] [2026-03-03T21:04:40.314Z] ----------------------------------------------------------------------
+[debug] [2026-03-03T21:04:40.318Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\melus\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only hosting
+[debug] [2026-03-03T21:04:40.318Z] CLI Version:   15.8.0
+[debug] [2026-03-03T21:04:40.318Z] Platform:      win32
+[debug] [2026-03-03T21:04:40.318Z] Node Version:  v25.7.0
+[debug] [2026-03-03T21:04:40.318Z] Time:          Tue Mar 03 2026 23:04:40 GMT+0200 (South Africa Standard Time)
+[debug] [2026-03-03T21:04:40.319Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-03-03T21:04:40.321Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-03-03T21:04:44.188Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-03-03T21:04:44.188Z] > authorizing via signed-in user (melusidemadema@gmail.com)
+[debug] [2026-03-03T21:04:44.188Z] [iam] checking project hostel-accommodation for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-03-03T21:04:44.190Z] Checked if tokens are valid: false, expires at: 1772471692727
+[debug] [2026-03-03T21:04:44.190Z] Checked if tokens are valid: false, expires at: 1772471692727
+[debug] [2026-03-03T21:04:44.190Z] > refreshing access token with scopes: []
+[debug] [2026-03-03T21:04:44.192Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-03-03T21:04:44.192Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-03-03T21:04:44.874Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-03-03T21:04:44.874Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-03-03T21:04:44.889Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/hostel-accommodation:testIamPermissions [none]
+[debug] [2026-03-03T21:04:44.889Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/hostel-accommodation:testIamPermissions  x-goog-user-project=hostel-accommodation
+[debug] [2026-03-03T21:04:44.889Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/hostel-accommodation:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-03-03T21:04:44.911Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2026-03-03T21:04:44.911Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[debug] [2026-03-03T21:04:46.616Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/hostel-accommodation:testIamPermissions 200
+[debug] [2026-03-03T21:04:46.616Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/hostel-accommodation:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-03-03T21:04:46.617Z] Checked if tokens are valid: true, expires at: 1772575483874
+[debug] [2026-03-03T21:04:46.617Z] Checked if tokens are valid: true, expires at: 1772575483874
+[debug] [2026-03-03T21:04:46.618Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/hostel-accommodation [none]
